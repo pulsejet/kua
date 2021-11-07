@@ -18,6 +18,12 @@ Bidder::Bidder(ConfigBundle& configBundle, NodeWatcher& nodeWatcher)
 {
   NDN_LOG_INFO("Constructing Bidder");
 
+  // Master's bidder does nothing
+  if (m_configBundle.isMaster)
+  {
+    return;
+  }
+
   // Initialize SVS
   m_svs = std::make_unique<ndn::svs::SVSync>(
     m_syncPrefix, m_nodePrefix, m_face, std::bind(&Bidder::updateCallback, this, _1));
