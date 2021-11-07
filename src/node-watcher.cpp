@@ -39,7 +39,7 @@ NodeWatcher::retxHeartbeat()
 }
 
 void
-NodeWatcher::updateCallback(std::vector<ndn::svs::MissingDataInfo> missingInfo)
+NodeWatcher::updateCallback(const std::vector<ndn::svs::MissingDataInfo>& missingInfo)
 {
   auto now = std::chrono::system_clock::now();
   for (auto m : missingInfo)

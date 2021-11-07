@@ -22,7 +22,7 @@ public:
 
 private:
   /** On SVS update */
-  void updateCallback(std::vector<ndn::svs::MissingDataInfo> missingInfo);
+  void updateCallback(const std::vector<ndn::svs::MissingDataInfo>& missingInfo);
 
   /** Transmit and schedule the next heartbeat message */
   void retxHeartbeat();

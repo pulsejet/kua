@@ -20,6 +20,12 @@ private:
    */
   void initialize();
 
+  /** On SVS update */
+  void updateCallback(const std::vector<ndn::svs::MissingDataInfo>& missingInfo);
+
+  /** Start a new auction */
+  void auction();
+
 private:
   ConfigBundle& m_configBundle;
   ndn::Name m_syncPrefix;
@@ -30,6 +36,8 @@ private:
   NodeWatcher& m_nodeWatcher;
 
   ndn::random::RandomNumberEngine& m_rng;
+
+  bool m_initialized = false;
 
   std::unique_ptr<ndn::svs::SVSync> m_svs;
 };

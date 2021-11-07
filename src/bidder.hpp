@@ -19,6 +19,12 @@ private:
    */
   void initialize();
 
+  /** On SVS update */
+  void updateCallback(const std::vector<ndn::svs::MissingDataInfo>& missingInfo);
+
+  /** Process packet from master */
+  void processMasterMessage(const ndn::Data& data);
+
 private:
   ConfigBundle& m_configBundle;
   ndn::Name m_syncPrefix;

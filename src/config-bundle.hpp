@@ -12,3 +12,6 @@ struct ConfigBundle
   ndn::KeyChain& keyChain;
   const bool isMaster;
 };
+
+// Config options that need to go into config file
+#define MASTER_PREFIX "/master"
