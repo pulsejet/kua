@@ -1,6 +1,8 @@
 #include <iostream>
 
+#include "config-bundle.hpp"
 #include "node-watcher.hpp"
+#include "bidder.hpp"
 
 int
 main(int argc, char *argv[])
@@ -19,10 +21,12 @@ main(int argc, char *argv[])
   ndn::Face face;
   ndn::KeyChain keyChain;
 
-  // Start watching node list
-  ndn::Name watcherPrefix(kuaPrefix);
-  watcherPrefix.append("sync").append("health");
-  kua::NodeWatcher nodeWatcher(watcherPrefix, nodePrefix, face, keyChain);
+  // Create common bundle
+  ConfigBundle configBundle { kuaPrefix, nodePrefix, face, keyChain };
+
+  // Start components
+  kua::NodeWatcher nodeWatcher(configBundle);
+  kua::Bidder bidder(configBundle, nodeWatcher);
 
   // Infinite loop
   face.processEvents();

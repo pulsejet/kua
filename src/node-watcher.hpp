@@ -5,6 +5,8 @@
 
 #include <ndn-svs/svsync.hpp>
 
+#include "config-bundle.hpp"
+
 #define EXCLUDE_TIME_MS 10000
 
 namespace kua {
@@ -13,8 +15,7 @@ class NodeWatcher
 {
 public:
   /** Initialize the node watcher with the sync prefix */
-  NodeWatcher(const ndn::Name& syncPrefix, const ndn::Name& nodePrefix,
-              ndn::Face& face, ndn::KeyChain& keyChain);
+  NodeWatcher(ConfigBundle& configBundle);
 
   /** Get list of nodes with their base prefixes */
   std::vector<ndn::Name> getNodeList();

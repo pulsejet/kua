@@ -37,7 +37,7 @@ def configure(conf):
     conf.check_cfg(package='libndn-svs', args=['--cflags', '--libs'], uselib_store='NDN_SVS',
                    pkg_config_path=os.environ.get('PKG_CONFIG_PATH', '%s/pkgconfig' % conf.env.LIBDIR))
 
-    boost_libs = ['system', 'program_options', 'filesystem']
+    boost_libs = ['system', 'thread', 'program_options', 'log_setup', 'log']
     if conf.env.WITH_TESTS or conf.env.WITH_OTHER_TESTS:
         boost_libs.append('unit_test_framework')
 
@@ -66,6 +66,7 @@ def build(bld):
         target='kua-objects',
         source=bld.path.ant_glob('src/**/*.cpp',
                                  excl=['src/main.cpp']),
+        use='NDN_CXX NDN_SVS BOOST',
         includes='kua',
         export_includes='kua')
 

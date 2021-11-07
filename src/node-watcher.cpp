@@ -2,13 +2,12 @@
 
 namespace kua {
 
-NodeWatcher::NodeWatcher(const ndn::Name& syncPrefix, const ndn::Name& nodePrefix,
-                         ndn::Face& face, ndn::KeyChain& keyChain)
-  : m_syncPrefix(syncPrefix)
-  , m_nodePrefix(nodePrefix)
-  , m_face(face)
+NodeWatcher::NodeWatcher(ConfigBundle& configBundle)
+  : m_syncPrefix(ndn::Name(configBundle.kuaPrefix).append("sync").append("health"))
+  , m_nodePrefix(configBundle.nodePrefix)
+  , m_face(configBundle.face)
   , m_scheduler(m_face.getIoService())
-  , m_keyChain(keyChain)
+  , m_keyChain(configBundle.keyChain)
   , m_rng(ndn::random::getRandomNumberEngine())
   , m_retxDist(3000 * 0.9, 3000 * 1.1)
 {
