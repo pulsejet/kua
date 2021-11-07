@@ -1,6 +1,10 @@
 #include "node-watcher.hpp"
 
+#include <ndn-cxx/util/logger.hpp>
+
 namespace kua {
+
+NDN_LOG_INIT(kua.nodewatcher);
 
 NodeWatcher::NodeWatcher(ConfigBundle& configBundle)
   : m_syncPrefix(ndn::Name(configBundle.kuaPrefix).append("sync").append("health"))
@@ -11,6 +15,8 @@ NodeWatcher::NodeWatcher(ConfigBundle& configBundle)
   , m_rng(ndn::random::getRandomNumberEngine())
   , m_retxDist(3000 * 0.9, 3000 * 1.1)
 {
+  NDN_LOG_INFO("Constructing NodeWatcher");
+
   m_svs = std::make_unique<ndn::svs::SVSync>(
     m_syncPrefix, m_nodePrefix, m_face, std::bind(&NodeWatcher::updateCallback, this, _1));
 
@@ -20,6 +26,8 @@ NodeWatcher::NodeWatcher(ConfigBundle& configBundle)
 void
 NodeWatcher::retxHeartbeat()
 {
+  NDN_LOG_TRACE("retxHeartbeat");
+
   // Send heartbeat
   ndn::Name dataName(m_nodePrefix);
   dataName.appendTimestamp();
@@ -36,6 +44,7 @@ NodeWatcher::updateCallback(std::vector<ndn::svs::MissingDataInfo> missingInfo)
   auto now = std::chrono::system_clock::now();
   for (auto m : missingInfo)
   {
+    NDN_LOG_TRACE("update " << m.nodeId);
     m_nodeMap[m.nodeId] = now;
   }
 }

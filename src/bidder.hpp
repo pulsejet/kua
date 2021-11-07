@@ -3,7 +3,6 @@
 #include <map>
 
 #include <ndn-svs/svsync.hpp>
-#include <ndn-cxx/util/logger.hpp>
 
 #include "config-bundle.hpp"
 #include "node-watcher.hpp"
@@ -15,6 +14,13 @@ class Bidder
 public:
   /** Initialize the bidder with the sync prefix */
   Bidder(ConfigBundle& configBundle, NodeWatcher& nodeWatcher);
+
+private:
+  /**
+   * Attempt to initialize bidder
+   * If there are less than 3 nodes known, init will fail
+   */
+  void initialize();
 
 private:
   ndn::Name m_syncPrefix;
