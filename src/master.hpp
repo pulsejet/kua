@@ -25,16 +25,24 @@ private:
    * Attempt to initialize master
    * If there are less than 3 nodes known, init will retry later
    */
-  void initialize();
+  void
+  initialize();
 
   /** On SVS update */
-  void updateCallback(const std::vector<ndn::svs::MissingDataInfo>& missingInfo);
+  void
+  updateCallback(const std::vector<ndn::svs::MissingDataInfo>& missingInfo);
 
   /** Start a new auction */
-  void auction();
+  void
+  auction();
 
   /** Start a new auction for a given bucket */
-  void auction(unsigned int id);
+  void
+  auction(unsigned int id);
+
+  /** Process packet from master */
+  void
+  processMessage(const ndn::Data& data);
 
 private:
   ConfigBundle& m_configBundle;

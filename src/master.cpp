@@ -89,6 +89,27 @@ void
 Master::updateCallback(const std::vector<ndn::svs::MissingDataInfo>& missingInfo)
 {
   if (!m_initialized) return;
+
+  for (const auto m : missingInfo) {
+    for (ndn::svs::SeqNo i = m.low; i <= m.high; i++) {
+      m_svs->fetchData(m.nodeId, i, std::bind(&Master::processMessage, this, _1));
+    }
+  }
+}
+
+void
+Master::processMessage(const ndn::Data& data)
+{
+  ndn::Name msg(data.getContent().blockFromValue());
+  NDN_LOG_TRACE("RECV_MSG=" << msg);
+  auto type = msg.get(0).toUri();
+
+  if (type == "BID") {
+    unsigned int bucketId = msg.get(1).toNumber();
+    unsigned int auctionId = msg.get(2).toNumber();
+    unsigned int bidAmount = msg.get(3).toNumber();
+    NDN_LOG_DEBUG("RECV_BID for #" << bucketId << " AID " << auctionId << " $" << bidAmount);
+  }
 }
 
 } // namespace kua

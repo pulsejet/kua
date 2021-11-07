@@ -17,13 +17,20 @@ private:
   /**
    * Initialize the bidder
    */
-  void initialize();
+  void
+  initialize();
 
   /** On SVS update */
-  void updateCallback(const std::vector<ndn::svs::MissingDataInfo>& missingInfo);
+  void
+  updateCallback(const std::vector<ndn::svs::MissingDataInfo>& missingInfo);
 
   /** Process packet from master */
-  void processMasterMessage(const ndn::Data& data);
+  void
+  processMasterMessage(const ndn::Data& data);
+
+  /** Place bid for a bucket */
+  void
+  placeBid(unsigned int bucketId, unsigned int auctionId);
 
 private:
   ConfigBundle& m_configBundle;

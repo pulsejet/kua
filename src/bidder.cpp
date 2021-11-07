@@ -49,16 +49,30 @@ void
 Bidder::processMasterMessage(const ndn::Data& data)
 {
   ndn::Name msg(data.getContent().blockFromValue());
-  NDN_LOG_DEBUG("RECV_MASTER_MSG=" << msg);
-
+  NDN_LOG_TRACE("RECV_MASTER_MSG=" << msg);
   auto type = msg.get(0).toUri();
 
   if (type == "AUCTION") {
     unsigned int bucketId = msg.get(1).toNumber();
     unsigned int auctionId = msg.get(2).toNumber();
-
     NDN_LOG_DEBUG("RECV_AUCTION for #" << bucketId << " AID " << auctionId);
+    placeBid(bucketId, auctionId);
   }
+}
+
+void
+Bidder::placeBid(unsigned int bucketId, unsigned int auctionId)
+{
+  auto bidAmount = m_rng();
+
+  ndn::Name bidInfo;
+  bidInfo.append("BID");
+  bidInfo.appendNumber(bucketId);
+  bidInfo.appendNumber(auctionId);
+  bidInfo.appendNumber(bidAmount);
+
+  NDN_LOG_DEBUG("PLACE_BID for #" << bucketId << " AID " << auctionId << " $" << bidAmount);
+  m_svs->publishData(bidInfo.wireEncode(), ndn::time::milliseconds(1000));
 }
 
 } // namespace kua
