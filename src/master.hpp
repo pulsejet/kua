@@ -7,15 +7,16 @@
 
 namespace kua {
 
-class Bidder
+class Master
 {
 public:
   /** Initialize the bidder with the sync prefix */
-  Bidder(ConfigBundle& configBundle, NodeWatcher& nodeWatcher);
+  Master(ConfigBundle& configBundle, NodeWatcher& nodeWatcher);
 
 private:
   /**
-   * Initialize the bidder
+   * Attempt to initialize master
+   * If there are less than 3 nodes known, init will retry later
    */
   void initialize();
 

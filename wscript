@@ -65,12 +65,12 @@ def build(bld):
     kua_objects = bld.objects(
         target='kua-objects',
         source=bld.path.ant_glob('src/**/*.cpp',
-                                 excl=['src/main.cpp']),
+                                 excl=['src/kua.cpp']),
         use='NDN_CXX NDN_SVS BOOST',
         includes='kua',
         export_includes='kua')
 
-    bld.program(name='nfd',
+    bld.program(name='kua',
                 target='bin/kua',
-                source='src/main.cpp',
+                source='src/kua.cpp',
                 use='kua-objects NDN_CXX NDN_SVS BOOST')

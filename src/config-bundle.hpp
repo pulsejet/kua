@@ -6,8 +6,9 @@
 
 struct ConfigBundle
 {
-  ndn::Name kuaPrefix;
-  ndn::Name nodePrefix;
+  const ndn::Name kuaPrefix;
+  const ndn::Name nodePrefix;
   ndn::Face& face;
   ndn::KeyChain& keyChain;
+  const bool isMaster;
 };
