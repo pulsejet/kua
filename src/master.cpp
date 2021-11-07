@@ -18,6 +18,14 @@ Master::Master(ConfigBundle& configBundle, NodeWatcher& nodeWatcher)
 {
   NDN_LOG_INFO("Constructing Master");
 
+  // Initialize bucket list
+  for (unsigned int i = 0; i < NUM_BUCKETS; i++)
+  {
+    Bucket b;
+    b.id = i;
+    m_buckets.push_back(b);
+  }
+
   // Initialize SVS
   m_svs = std::make_unique<ndn::svs::SVSync>(
     m_syncPrefix, MASTER_PREFIX, m_face, std::bind(&Master::updateCallback, this, _1));
@@ -41,17 +49,40 @@ Master::initialize()
   NDN_LOG_DEBUG("Initializing Master");
 
   m_initialized = true;
+
   auction();
 }
 
 void
 Master::auction()
 {
-  ndn::Name dataName(m_nodePrefix);
-  dataName.appendTimestamp();
-  ndn::Data data(dataName);
-  m_configBundle.keyChain.sign(data);
-  m_svs->publishData(data.wireEncode(), ndn::time::milliseconds(1000));
+  if (!currentAuctionId) {
+    for (unsigned int i = 0; i < m_buckets.size(); i++)
+    {
+      Bucket& b = m_buckets[i];
+      if (b.confirmedHosts.size() == 0)
+      {
+        auction(i);
+        return;
+      }
+    }
+  }
+
+  auctionRecheckEvent = m_scheduler.schedule(ndn::time::milliseconds(1000), [this] { auction(); });
+}
+
+void
+Master::auction(unsigned int id)
+{
+  currentAuctionId = m_rng();
+  NDN_LOG_INFO("Starting auction for #" << id << " AID " << currentAuctionId);
+
+  ndn::Name auctionInfo;
+  auctionInfo.append("AUCTION");
+  auctionInfo.appendNumber(id);
+  auctionInfo.appendNumber(currentAuctionId);
+
+  m_svs->publishData(auctionInfo.wireEncode(), ndn::time::milliseconds(1000));
 }
 
 void

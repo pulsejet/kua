@@ -48,7 +48,17 @@ Bidder::updateCallback(const std::vector<ndn::svs::MissingDataInfo>& missingInfo
 void
 Bidder::processMasterMessage(const ndn::Data& data)
 {
-  std::cout << "RECV MASTER MSG" << std::endl;
+  ndn::Name msg(data.getContent().blockFromValue());
+  NDN_LOG_DEBUG("RECV_MASTER_MSG=" << msg);
+
+  auto type = msg.get(0).toUri();
+
+  if (type == "AUCTION") {
+    unsigned int bucketId = msg.get(1).toNumber();
+    unsigned int auctionId = msg.get(2).toNumber();
+
+    NDN_LOG_DEBUG("RECV_AUCTION for #" << bucketId << " AID " << auctionId);
+  }
 }
 
 } // namespace kua

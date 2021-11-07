@@ -15,3 +15,4 @@ struct ConfigBundle
 
 // Config options that need to go into config file
 #define MASTER_PREFIX "/master"
+#define NUM_BUCKETS 16
