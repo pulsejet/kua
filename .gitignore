@@ -5,6 +5,7 @@
 /.emacs.desktop.lock
 *.elc
 .\#*
+/log
 
 # macOS
 .DS_Store

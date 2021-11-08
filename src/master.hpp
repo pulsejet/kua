@@ -4,6 +4,7 @@
 
 #include "config-bundle.hpp"
 #include "node-watcher.hpp"
+#include "bucket.hpp"
 
 namespace kua {
 
@@ -13,13 +14,6 @@ public:
   /** Initialize the bidder with the sync prefix */
   Master(ConfigBundle& configBundle, NodeWatcher& nodeWatcher);
 private:
-  struct Bucket
-  {
-    unsigned int id;
-    std::map<ndn::Name, int> pendingHosts;
-    std::map<ndn::Name, int> confirmedHosts;
-  };
-
   struct Bid
   {
     ndn::Name bidder;

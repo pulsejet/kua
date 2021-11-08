@@ -80,6 +80,21 @@ Bidder::processMasterMessage(const ndn::Data& data)
       winAckInfo.appendNumber(bucketId);
       winAckInfo.appendNumber(auctionId);
       m_svs->publishData(winAckInfo.wireEncode(), ndn::time::milliseconds(1000));
+
+      if (!m_buckets.count(bucketId))
+      {
+        Bucket b;
+        b.id = bucketId;
+        m_buckets[bucketId] = b;
+      }
+
+      // Log all buckets served
+      std::stringstream ss;
+      for (const auto& bucket : m_buckets)
+      {
+        ss << " #" << bucket.first;
+      }
+      NDN_LOG_INFO("Should have workers for" << ss.str());
     }
   }
 }

@@ -4,6 +4,8 @@
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/face.hpp>
 
+namespace kua {
+
 struct ConfigBundle
 {
   const ndn::Name kuaPrefix;
@@ -12,6 +14,8 @@ struct ConfigBundle
   ndn::KeyChain& keyChain;
   const bool isMaster;
 };
+
+} // namespace kua
 
 // Config options that need to go into config file
 #define MASTER_PREFIX "/master"

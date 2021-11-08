@@ -4,6 +4,7 @@
 
 #include "config-bundle.hpp"
 #include "node-watcher.hpp"
+#include "bucket.hpp"
 
 namespace kua {
 
@@ -40,6 +41,9 @@ private:
   ndn::Scheduler m_scheduler;
   ndn::KeyChain& m_keyChain;
   NodeWatcher& m_nodeWatcher;
+
+  /** Buckets won by this node */
+  std::map<unsigned int, Bucket> m_buckets;
 
   ndn::random::RandomNumberEngine& m_rng;
 

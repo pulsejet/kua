@@ -25,7 +25,7 @@ main(int argc, char *argv[])
   ndn::KeyChain keyChain;
 
   // Create common bundle
-  ConfigBundle configBundle { kuaPrefix, nodePrefix, face, keyChain, isMaster };
+  kua::ConfigBundle configBundle { kuaPrefix, nodePrefix, face, keyChain, isMaster };
 
   // Start components
   kua::NodeWatcher nodeWatcher(configBundle);
