@@ -1,4 +1,5 @@
 #include "bidder.hpp"
+#include "worker.hpp"
 
 #include <ndn-cxx/util/logger.hpp>
 
@@ -114,6 +115,12 @@ Bidder::processMasterMessage(const ndn::Data& data)
     {
       m_buckets[bucketId].confirmedHosts[w.first] = 1;
       NDN_LOG_DEBUG("Confirmed node for #" << bucketId << " " << w.first);
+    }
+
+    // Start the worker if not running
+    if (!m_buckets[bucketId].worker)
+    {
+      m_buckets[bucketId].worker = std::make_shared<Worker>(m_configBundle, m_buckets[bucketId]);
     }
   }
 }
