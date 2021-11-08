@@ -16,8 +16,18 @@ private:
   struct Bucket
   {
     unsigned int id;
-    std::vector<ndn::Name> pendingHosts;
-    std::vector<ndn::Name> confirmedHosts;
+    std::map<ndn::Name, int> pendingHosts;
+    std::map<ndn::Name, int> confirmedHosts;
+  };
+
+  struct Bid
+  {
+    ndn::Name bidder;
+    unsigned int amount;
+
+    bool operator< (const Bid& rhs) const {
+        return amount < rhs.amount;
+    }
   };
 
 private:
@@ -42,7 +52,11 @@ private:
 
   /** Process packet from master */
   void
-  processMessage(const ndn::Data& data);
+  processMessage(const ndn::Name& sender, const ndn::Data& data);
+
+  /** End an auction and generate the winners reply */
+  void
+  declareAuctionWinners();
 
 private:
   ConfigBundle& m_configBundle;
@@ -61,12 +75,16 @@ private:
   std::vector<Bucket> m_buckets;
 
   /** Periodic check for auctions */
-  ndn::scheduler::ScopedEventId auctionRecheckEvent;
+  ndn::scheduler::ScopedEventId m_auctionRecheckEvent;
 
   /** Identifier for current auction. 0 if no auction. */
-  unsigned int currentAuctionId = 0;
+  unsigned int m_currentAuctionId = 0;
   /** Bucket ID for the auction that is currently happening */
-  unsigned int currentAuctionBucketId = 0;
+  unsigned int m_currentAuctionBucketId = 0;
+  /** Expected number of bids for current auction */
+  unsigned int m_currentAuctionNumBidsExpected = 0;
+  /** Bids for this bucket */
+  std::vector<Bid> m_currentAuctionBids;
 
   std::unique_ptr<ndn::svs::SVSync> m_svs;
 };

@@ -58,18 +58,37 @@ Bidder::processMasterMessage(const ndn::Data& data)
   NDN_LOG_TRACE("RECV_MASTER_MSG=" << msg);
   auto type = msg.get(0).toUri();
 
-  if (type == "AUCTION") {
+  if (type == "AUCTION")
+  {
     unsigned int bucketId = msg.get(1).toNumber();
     unsigned int auctionId = msg.get(2).toNumber();
     NDN_LOG_DEBUG("RECV_AUCTION for #" << bucketId << " AID " << auctionId);
     placeBid(bucketId, auctionId);
+  }
+  else if (type == "WIN")
+  {
+    unsigned int bucketId = msg.get(1).toNumber();
+    unsigned int auctionId = msg.get(2).toNumber();
+    ndn::Name winner(msg.get(3).blockFromValue());
+
+    if (winner == m_nodePrefix)
+    {
+      NDN_LOG_INFO("Won auction for #" << bucketId);
+
+      ndn::Name winAckInfo;
+      winAckInfo.append("WIN_ACK");
+      winAckInfo.appendNumber(bucketId);
+      winAckInfo.appendNumber(auctionId);
+      m_svs->publishData(winAckInfo.wireEncode(), ndn::time::milliseconds(1000));
+    }
   }
 }
 
 void
 Bidder::placeBid(unsigned int bucketId, unsigned int auctionId)
 {
-  auto bidAmount = m_rng();
+  static std::uniform_int_distribution<int> uid(1,6000);
+  auto bidAmount = uid(m_rng);
 
   ndn::Name bidInfo;
   bidInfo.append("BID");

@@ -15,8 +15,7 @@ nfdc strategy set /kua/sync/ /localhost/nfd/strategy/multicast
 
 Run Kua master
 ```
-nfdc cs erase /  # clear content store every time
-NDN_LOG="kua.*=DEBUG" ./build/bin/kua /kua /master 1
+nfdc cs erase / && NDN_LOG="kua.*=DEBUG" ./build/bin/kua /kua /master 1
 ```
 
 Run Kua nodes
