@@ -45,6 +45,7 @@ private:
   /** Buckets won by this node */
   std::map<unsigned int, Bucket> m_buckets;
 
+  std::uniform_int_distribution<> m_rndBid;
   ndn::random::RandomNumberEngine& m_rng;
 
   std::unique_ptr<ndn::svs::SVSync> m_svs;

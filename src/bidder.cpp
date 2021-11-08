@@ -14,6 +14,7 @@ Bidder::Bidder(ConfigBundle& configBundle, NodeWatcher& nodeWatcher)
   , m_scheduler(m_face.getIoService())
   , m_keyChain(configBundle.keyChain)
   , m_nodeWatcher(nodeWatcher)
+  , m_rndBid(1, 100)
   , m_rng(ndn::random::getRandomNumberEngine())
 {
   NDN_LOG_INFO("Constructing Bidder");
@@ -102,8 +103,8 @@ Bidder::processMasterMessage(const ndn::Data& data)
 void
 Bidder::placeBid(unsigned int bucketId, unsigned int auctionId)
 {
-  static std::uniform_int_distribution<int> uid(1,6000);
-  auto bidAmount = uid(m_rng);
+  auto bidAmount = m_rndBid(m_rng);
+  bidAmount += 10000.0 / m_buckets.size();
 
   ndn::Name bidInfo;
   bidInfo.append("BID");
