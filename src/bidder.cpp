@@ -104,7 +104,7 @@ void
 Bidder::placeBid(unsigned int bucketId, unsigned int auctionId)
 {
   auto bidAmount = m_rndBid(m_rng);
-  bidAmount += 10000.0 / m_buckets.size();
+  bidAmount += 10000.0 / (m_buckets.size() + 1);
 
   ndn::Name bidInfo;
   bidInfo.append("BID");
