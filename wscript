@@ -74,3 +74,9 @@ def build(bld):
                 target='bin/kua',
                 source='src/kua.cpp',
                 use='kua-objects NDN_CXX NDN_SVS BOOST')
+
+    bld.program(name='kua-master',
+                target='bin/kua-master',
+                source='src/kua.cpp',
+                defines='KUA_IS_MASTER',
+                use='kua-objects NDN_CXX NDN_SVS BOOST')

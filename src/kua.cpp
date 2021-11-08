@@ -9,16 +9,22 @@
 int
 main(int argc, char *argv[])
 {
-  if (argc < 4)
+  if (argc < 3)
   {
-    std::cerr << "Usage: kua <kua-prefix> <node-prefix> <is-master=0|1>" << std::endl;
+    std::cerr << "Usage: kua <kua-prefix> <node-prefix>" << std::endl;
     exit(1);
   }
 
   // Get arguments
   const ndn::Name kuaPrefix(argv[1]);
   const ndn::Name nodePrefix(argv[2]);
-  const bool isMaster = (std::string(argv[3]) == "1");
+
+  const bool isMaster =
+#ifdef KUA_IS_MASTER
+    true;
+#else
+    false;
+#endif
 
   // Start face and keychain
   ndn::Face face;
