@@ -173,7 +173,7 @@ Master::declareAuctionWinners()
 {
   std::sort(m_currentAuctionBids.begin(), m_currentAuctionBids.end());
 
-  for (size_t i = m_currentAuctionBids.size() - 1; i >= 0; i--)
+  for (int i = m_currentAuctionBids.size() - 1; i >= 0; i--)
   {
     const Bid& bid = m_currentAuctionBids[i];
 
