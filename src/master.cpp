@@ -97,7 +97,7 @@ Master::updateCallback(const std::vector<ndn::svs::MissingDataInfo>& missingInfo
 
   for (const auto m : missingInfo) {
     for (ndn::svs::SeqNo i = m.low; i <= m.high; i++) {
-      m_svs->fetchData(m.nodeId, i, std::bind(&Master::processMessage, this, m.nodeId, _1));
+      m_svs->fetchData(m.nodeId, i, std::bind(&Master::processMessage, this, m.nodeId, _1), 10);
     }
   }
 }
@@ -160,11 +160,7 @@ Master::processMessage(const ndn::Name& sender, const ndn::Data& data)
 
     // Check if all pending are confirmed now
     if (m_buckets[m_currentAuctionBucketId].pendingHosts.size() == 0)
-    {
-      // End the auction
-      m_currentAuctionId = 0;
-      auction();
-    }
+      endAuction();
   }
 }
 
@@ -196,11 +192,27 @@ Master::declareAuctionWinners()
   }
 
   if (m_buckets[m_currentAuctionBucketId].pendingHosts.size() == 0)
+    endAuction();
+}
+
+void
+Master::endAuction()
+{
+  ndn::svs::VersionVector winnerVector;
+  for (const auto& n : m_buckets[m_currentAuctionBucketId].confirmedHosts)
   {
-    // End the auction
-    m_currentAuctionId = 0;
-    auction();
+    winnerVector.set(n.first, 1);
   }
+
+  ndn::Name auctionInfo;
+  auctionInfo.append("AUCTION_END");
+  auctionInfo.appendNumber(m_currentAuctionBucketId);
+  auctionInfo.appendNumber(m_currentAuctionId);
+  auctionInfo.append(winnerVector.encode());
+  m_svs->publishData(auctionInfo.wireEncode(), ndn::time::milliseconds(1000));
+
+  m_currentAuctionId = 0;
+  auction();
 }
 
 } // namespace kua

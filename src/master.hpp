@@ -52,6 +52,10 @@ private:
   void
   declareAuctionWinners();
 
+  /** End the auction with the final message */
+  void
+  endAuction();
+
 private:
   ConfigBundle& m_configBundle;
   ndn::Name m_syncPrefix;

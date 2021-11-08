@@ -47,7 +47,7 @@ Bidder::updateCallback(const std::vector<ndn::svs::MissingDataInfo>& missingInfo
     }
 
     for (ndn::svs::SeqNo i = m.low; i <= m.high; i++) {
-      m_svs->fetchData(m.nodeId, i, std::bind(&Bidder::processMasterMessage, this, _1));
+      m_svs->fetchData(m.nodeId, i, std::bind(&Bidder::processMasterMessage, this, _1), 10);
     }
   }
 }
@@ -96,6 +96,24 @@ Bidder::processMasterMessage(const ndn::Data& data)
         ss << " #" << bucket.first;
       }
       NDN_LOG_INFO("Should have workers for" << ss.str());
+    }
+  }
+  else if (type == "AUCTION_END")
+  {
+    ndn::Name endInfo;
+    unsigned int bucketId = msg.get(1).toNumber();
+
+    if (!m_buckets.count(bucketId))
+      return;
+
+    m_buckets[bucketId].confirmedHosts.clear();
+
+    ndn::svs::VersionVector winnerVector(msg.get(3).blockFromValue());
+
+    for (const auto& w : winnerVector)
+    {
+      m_buckets[bucketId].confirmedHosts[w.first] = 1;
+      NDN_LOG_DEBUG("Confirmed node for #" << bucketId << " " << w.first);
     }
   }
 }
