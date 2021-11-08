@@ -21,3 +21,4 @@ struct ConfigBundle
 #define MASTER_PREFIX "/master"
 #define NUM_BUCKETS 16
 #define NUM_REPLICA 3
+#define AUCTION_TIME_LIMIT 5

@@ -56,7 +56,8 @@ Master::initialize()
 void
 Master::auction()
 {
-  if (!m_currentAuctionId) {
+  if (!m_currentAuctionId)
+  {
     for (unsigned int i = 0; i < m_buckets.size(); i++)
     {
       Bucket& b = m_buckets[i];
@@ -67,6 +68,15 @@ Master::auction()
       }
     }
   }
+  else
+  {
+    if (m_currentAuctionTime > AUCTION_TIME_LIMIT)
+    {
+      // Timeout
+      m_currentAuctionId = 0;
+    }
+    m_currentAuctionTime++;
+  }
 
   m_auctionRecheckEvent = m_scheduler.schedule(ndn::time::milliseconds(1000), [this] { auction(); });
 }
@@ -74,6 +84,7 @@ Master::auction()
 void
 Master::auction(unsigned int id)
 {
+  m_currentAuctionTime = 0;
   m_currentAuctionId = m_rng();
   m_currentAuctionBucketId = id;
   NDN_LOG_INFO("Starting auction for #" << m_currentAuctionBucketId << " AID " << m_currentAuctionId);

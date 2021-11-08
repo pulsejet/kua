@@ -81,6 +81,8 @@ private:
   unsigned int m_currentAuctionBucketId = 0;
   /** Expected number of bids for current auction */
   unsigned int m_currentAuctionNumBidsExpected = 0;
+  /** Time for which the auction is running */
+  unsigned int m_currentAuctionTime = 0;
   /** Bids for this bucket */
   std::vector<Bid> m_currentAuctionBids;
 
