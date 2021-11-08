@@ -39,9 +39,9 @@ Master::initialize()
 {
   auto nodeList = m_nodeWatcher.getNodeList();
 
-  if (nodeList.size() < 2)
+  if (nodeList.size() < NUM_REPLICA)
   {
-    NDN_LOG_TRACE("Will not initialize Master without 3 nodes known");
+    NDN_LOG_TRACE("Will not initialize Master without " << NUM_REPLICA << " nodes known");
     m_scheduler.schedule(ndn::time::milliseconds(1000), [this] { initialize(); });
     return;
   }
