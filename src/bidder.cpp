@@ -61,17 +61,20 @@ Bidder::processMasterMessage(const ndn::Data& data)
 
   switch (msg.messageType)
   {
-    case AuctionMessage::TypeAuction:
+    case AuctionMessage::Type::Auction:
+    {
       NDN_LOG_DEBUG("RECV_AUCTION for #" << msg.bucketId << " AID " << msg.auctionId);
       placeBid(msg.bucketId, msg.auctionId);
       break;
+    }
 
-    case AuctionMessage::TypeWin:
+    case AuctionMessage::Type::Win:
+    {
       if (msg.winner == m_nodePrefix)
       {
         NDN_LOG_INFO("Won auction for #" << msg.bucketId);
 
-        AuctionMessage rmsg(AuctionMessage::TypeWinAck, msg.auctionId, msg.bucketId);
+        AuctionMessage rmsg(AuctionMessage::Type::WinAck, msg.auctionId, msg.bucketId);
         m_svs->publishData(rmsg.wireEncode(), ndn::time::milliseconds(1000));
 
         if (!m_buckets.count(msg.bucketId))
@@ -88,8 +91,10 @@ Bidder::processMasterMessage(const ndn::Data& data)
         NDN_LOG_INFO("Should have workers for" << ss.str());
       }
       break;
+    }
 
-    case AuctionMessage::TypeAuctionEnd:
+    case AuctionMessage::Type::AuctionEnd:
+    {
       if (!m_buckets.count(msg.bucketId))
         return;
 
@@ -104,6 +109,12 @@ Bidder::processMasterMessage(const ndn::Data& data)
       // Start the worker if not running
       if (!m_buckets[msg.bucketId].worker)
         m_buckets[msg.bucketId].worker = std::make_shared<Worker>(m_configBundle, m_buckets[msg.bucketId]);
+
+      break;
+    }
+
+    default:
+      return;
   }
 }
 
@@ -113,7 +124,7 @@ Bidder::placeBid(bucket_id_t bucketId, auction_id_t auctionId)
   auto bidAmount = m_rndBid(m_rng);
   bidAmount += 10000.0 / (m_buckets.size() + 1);
 
-  AuctionMessage msg(AuctionMessage::TypeBid, auctionId, bucketId);
+  AuctionMessage msg(AuctionMessage::Type::Bid, auctionId, bucketId);
   msg.bidAmount = bidAmount;
 
   NDN_LOG_DEBUG("PLACE_BID for #" << bucketId << " AID " << auctionId << " $" << bidAmount);

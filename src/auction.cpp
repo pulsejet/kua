@@ -5,7 +5,7 @@
 
 namespace kua {
 
-AuctionMessage::AuctionMessage(unsigned int _messageType,
+AuctionMessage::AuctionMessage(Type _messageType,
                                auction_id_t _auctionId,
                                bucket_id_t _bucketId)
   : messageType(_messageType)
@@ -34,7 +34,7 @@ AuctionMessage::wireEncode() const
     totalLength += valLength; \
   }
 
-  if (messageType == TypeBid)
+  if (messageType == Type::Bid)
     K_ENCODE_NNI(bidAmount, tlv::AuctionBidAmount);
 
   if (!winner.empty())
@@ -73,7 +73,7 @@ AuctionMessage::wireDecode(const ndn::Block& block)
   }
 
   try {
-    K_READ_NNI(messageType, tlv::AuctionMessageType);
+    messageType = (Type) (ndn::encoding::readNonNegativeInteger(block.get(tlv::AuctionMessageType)));
     K_READ_NNI(auctionId, tlv::AuctionId);
     K_READ_NNI(bucketId, tlv::BucketId);
   } catch (const std::exception& ex) {

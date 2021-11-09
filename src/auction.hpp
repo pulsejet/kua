@@ -11,22 +11,22 @@ namespace kua {
 
 struct AuctionMessage
 {
-  enum {
-    TypeAuction = 1,
-    TypeBid = 2,
-    TypeWin = 3,
-    TypeWinAck = 4,
-    TypeAuctionEnd = 5,
+  enum Type {
+    Auction = 1,
+    Bid = 2,
+    Win = 3,
+    WinAck = 4,
+    AuctionEnd = 5,
   };
 
-  unsigned int messageType;
+  Type messageType;
 
   auction_id_t auctionId;
   bucket_id_t bucketId;
 
   AuctionMessage() = default;
 
-  AuctionMessage(unsigned int _messageType,
+  AuctionMessage(Type _messageType,
                  auction_id_t _auctionId,
                  bucket_id_t _bucketId);
 

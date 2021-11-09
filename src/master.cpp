@@ -93,7 +93,7 @@ Master::auction(unsigned int id)
   m_currentAuctionNumBidsExpected = m_nodeWatcher.getNodeList().size();
   m_buckets[m_currentAuctionBucketId].pendingHosts.clear();
 
-  auto msg = newMsg(AuctionMessage::TypeAuction);
+  auto msg = newMsg(AuctionMessage::Type::Auction);
   m_svs->publishData(msg.wireEncode(), ndn::time::milliseconds(1000));
 }
 
@@ -121,7 +121,8 @@ Master::processMessage(const ndn::Name& sender, const ndn::Data& data)
 
   switch (msg.messageType)
   {
-    case AuctionMessage::TypeBid:
+    case AuctionMessage::Type::Bid:
+    {
       // Check for duplicate bids
       for (const Bid& bid : m_currentAuctionBids)
         if (bid.bidder == sender)
@@ -138,8 +139,10 @@ Master::processMessage(const ndn::Name& sender, const ndn::Data& data)
         declareAuctionWinners();
 
       break;
+    }
 
-    case AuctionMessage::TypeWinAck:
+    case AuctionMessage::Type::WinAck:
+    {
       NDN_LOG_TRACE("RECV_WIN_ACK from " << sender << " for #" << msg.bucketId <<
                     " AID " << msg.auctionId << " $" << msg.bidAmount);
 
@@ -156,6 +159,10 @@ Master::processMessage(const ndn::Name& sender, const ndn::Data& data)
         endAuction();
 
       break;
+    }
+
+    default:
+      return;
   }
 }
 
@@ -173,7 +180,7 @@ Master::declareAuctionWinners()
     m_buckets[m_currentAuctionBucketId].pendingHosts[bid.bidder] = 1;
 
     // Inform the winner
-    auto msg = newMsg(AuctionMessage::TypeWin);
+    auto msg = newMsg(AuctionMessage::Type::Win);
     msg.winner = bid.bidder;
     m_svs->publishData(msg.wireEncode(), ndn::time::milliseconds(1000));
 
@@ -190,7 +197,7 @@ Master::declareAuctionWinners()
 void
 Master::endAuction()
 {
-  auto msg = newMsg(AuctionMessage::TypeAuctionEnd);
+  auto msg = newMsg(AuctionMessage::Type::AuctionEnd);
   for (const auto& n : m_buckets[m_currentAuctionBucketId].confirmedHosts)
     msg.winnerList.push_back(n.first);
   m_svs->publishData(msg.wireEncode(), ndn::time::milliseconds(1000));

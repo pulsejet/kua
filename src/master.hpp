@@ -59,7 +59,7 @@ private:
 
   /** Create a new auction message */
   inline AuctionMessage
-  newMsg(unsigned int type)
+  newMsg(AuctionMessage::Type type)
   {
     return AuctionMessage(type, m_currentAuctionId, m_currentAuctionBucketId);
   }
