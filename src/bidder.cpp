@@ -78,11 +78,7 @@ Bidder::processMasterMessage(const ndn::Data& data)
         m_svs->publishData(rmsg.wireEncode(), ndn::time::milliseconds(1000));
 
         if (!m_buckets.count(msg.bucketId))
-        {
-          Bucket b;
-          b.id = msg.bucketId;
-          m_buckets[msg.bucketId] = b;
-        }
+          m_buckets[msg.bucketId] = std::make_shared<Bucket>(msg.bucketId);
 
         // Log all buckets served
         std::stringstream ss;
@@ -98,17 +94,17 @@ Bidder::processMasterMessage(const ndn::Data& data)
       if (!m_buckets.count(msg.bucketId))
         return;
 
-      m_buckets[msg.bucketId].confirmedHosts.clear();
+      m_buckets[msg.bucketId]->confirmedHosts.clear();
 
       for (const auto& w : msg.winnerList)
       {
-        m_buckets[msg.bucketId].confirmedHosts[w] = 1;
+        m_buckets[msg.bucketId]->confirmedHosts[w] = 1;
         NDN_LOG_DEBUG("Confirmed node for #" << msg.bucketId << " " << w);
       }
 
       // Start the worker if not running
-      if (!m_buckets[msg.bucketId].worker)
-        m_buckets[msg.bucketId].worker = std::make_shared<Worker>(m_configBundle, m_buckets[msg.bucketId]);
+      if (!m_buckets[msg.bucketId]->worker)
+        m_buckets[msg.bucketId]->worker = std::make_shared<Worker>(m_configBundle, *m_buckets[msg.bucketId]);
 
       break;
     }

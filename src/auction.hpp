@@ -1,11 +1,12 @@
 #pragma once
 
 #include "tlv.hpp"
+#include "bucket.hpp"
+
 #include <ndn-cxx/encoding/block.hpp>
 #include <ndn-cxx/name.hpp>
 
 typedef unsigned int auction_id_t;
-typedef unsigned int bucket_id_t;
 
 namespace kua {
 

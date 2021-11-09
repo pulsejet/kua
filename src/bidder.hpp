@@ -44,7 +44,7 @@ private:
   NodeWatcher& m_nodeWatcher;
 
   /** Buckets won by this node */
-  std::map<unsigned int, Bucket> m_buckets;
+  std::map<bucket_id_t, std::shared_ptr<Bucket>> m_buckets;
 
   std::uniform_int_distribution<> m_rndBid;
   ndn::random::RandomNumberEngine& m_rng;

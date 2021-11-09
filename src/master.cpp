@@ -20,11 +20,7 @@ Master::Master(ConfigBundle& configBundle, NodeWatcher& nodeWatcher)
 
   // Initialize bucket list
   for (unsigned int i = 0; i < NUM_BUCKETS; i++)
-  {
-    Bucket b;
-    b.id = i;
-    m_buckets.push_back(b);
-  }
+    m_buckets.push_back(Bucket(i));
 
   // Initialize SVS
   m_svs = std::make_unique<ndn::svs::SVSync>(
