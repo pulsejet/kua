@@ -5,6 +5,7 @@
 #include "config-bundle.hpp"
 #include "node-watcher.hpp"
 #include "bucket.hpp"
+#include "auction.hpp"
 
 namespace kua {
 
@@ -56,6 +57,13 @@ private:
   void
   endAuction();
 
+  /** Create a new auction message */
+  inline AuctionMessage
+  newMsg(unsigned int type)
+  {
+    return AuctionMessage(type, m_currentAuctionId, m_currentAuctionBucketId);
+  }
+
 private:
   ConfigBundle& m_configBundle;
   ndn::Name m_syncPrefix;
@@ -76,9 +84,9 @@ private:
   ndn::scheduler::ScopedEventId m_auctionRecheckEvent;
 
   /** Identifier for current auction. 0 if no auction. */
-  unsigned int m_currentAuctionId = 0;
+  auction_id_t m_currentAuctionId = 0;
   /** Bucket ID for the auction that is currently happening */
-  unsigned int m_currentAuctionBucketId = 0;
+  bucket_id_t m_currentAuctionBucketId = 0;
   /** Expected number of bids for current auction */
   unsigned int m_currentAuctionNumBidsExpected = 0;
   /** Time for which the auction is running */

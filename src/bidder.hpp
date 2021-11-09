@@ -5,6 +5,7 @@
 #include "config-bundle.hpp"
 #include "node-watcher.hpp"
 #include "bucket.hpp"
+#include "auction.hpp"
 
 namespace kua {
 
@@ -31,7 +32,7 @@ private:
 
   /** Place bid for a bucket */
   void
-  placeBid(unsigned int bucketId, unsigned int auctionId);
+  placeBid(bucket_id_t bucketId, auction_id_t auctionId);
 
 private:
   ConfigBundle& m_configBundle;

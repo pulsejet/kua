@@ -56,89 +56,68 @@ Bidder::updateCallback(const std::vector<ndn::svs::MissingDataInfo>& missingInfo
 void
 Bidder::processMasterMessage(const ndn::Data& data)
 {
-  ndn::Name msg(data.getContent().blockFromValue());
-  NDN_LOG_TRACE("RECV_MASTER_MSG=" << msg);
-  auto type = msg.get(0).toUri();
+  AuctionMessage msg;
+  msg.wireDecode(data.getContent().blockFromValue());
 
-  if (type == "AUCTION")
+  switch (msg.messageType)
   {
-    unsigned int bucketId = msg.get(1).toNumber();
-    unsigned int auctionId = msg.get(2).toNumber();
-    NDN_LOG_DEBUG("RECV_AUCTION for #" << bucketId << " AID " << auctionId);
-    placeBid(bucketId, auctionId);
-  }
-  else if (type == "WIN")
-  {
-    unsigned int bucketId = msg.get(1).toNumber();
-    unsigned int auctionId = msg.get(2).toNumber();
-    ndn::Name winner(msg.get(3).blockFromValue());
+    case AuctionMessage::TypeAuction:
+      NDN_LOG_DEBUG("RECV_AUCTION for #" << msg.bucketId << " AID " << msg.auctionId);
+      placeBid(msg.bucketId, msg.auctionId);
+      break;
 
-    if (winner == m_nodePrefix)
-    {
-      NDN_LOG_INFO("Won auction for #" << bucketId);
-
-      ndn::Name winAckInfo;
-      winAckInfo.append("WIN_ACK");
-      winAckInfo.appendNumber(bucketId);
-      winAckInfo.appendNumber(auctionId);
-      m_svs->publishData(winAckInfo.wireEncode(), ndn::time::milliseconds(1000));
-
-      if (!m_buckets.count(bucketId))
+    case AuctionMessage::TypeWin:
+      if (msg.winner == m_nodePrefix)
       {
-        Bucket b;
-        b.id = bucketId;
-        m_buckets[bucketId] = b;
+        NDN_LOG_INFO("Won auction for #" << msg.bucketId);
+
+        AuctionMessage rmsg(AuctionMessage::TypeWinAck, msg.auctionId, msg.bucketId);
+        m_svs->publishData(rmsg.wireEncode(), ndn::time::milliseconds(1000));
+
+        if (!m_buckets.count(msg.bucketId))
+        {
+          Bucket b;
+          b.id = msg.bucketId;
+          m_buckets[msg.bucketId] = b;
+        }
+
+        // Log all buckets served
+        std::stringstream ss;
+        for (const auto& bucket : m_buckets)
+          ss << " #" << bucket.first;
+        NDN_LOG_INFO("Should have workers for" << ss.str());
+      }
+      break;
+
+    case AuctionMessage::TypeAuctionEnd:
+      if (!m_buckets.count(msg.bucketId))
+        return;
+
+      m_buckets[msg.bucketId].confirmedHosts.clear();
+
+      for (const auto& w : msg.winnerList)
+      {
+        m_buckets[msg.bucketId].confirmedHosts[w] = 1;
+        NDN_LOG_DEBUG("Confirmed node for #" << msg.bucketId << " " << w);
       }
 
-      // Log all buckets served
-      std::stringstream ss;
-      for (const auto& bucket : m_buckets)
-      {
-        ss << " #" << bucket.first;
-      }
-      NDN_LOG_INFO("Should have workers for" << ss.str());
-    }
-  }
-  else if (type == "AUCTION_END")
-  {
-    ndn::Name endInfo;
-    unsigned int bucketId = msg.get(1).toNumber();
-
-    if (!m_buckets.count(bucketId))
-      return;
-
-    m_buckets[bucketId].confirmedHosts.clear();
-
-    ndn::svs::VersionVector winnerVector(msg.get(3).blockFromValue());
-
-    for (const auto& w : winnerVector)
-    {
-      m_buckets[bucketId].confirmedHosts[w.first] = 1;
-      NDN_LOG_DEBUG("Confirmed node for #" << bucketId << " " << w.first);
-    }
-
-    // Start the worker if not running
-    if (!m_buckets[bucketId].worker)
-    {
-      m_buckets[bucketId].worker = std::make_shared<Worker>(m_configBundle, m_buckets[bucketId]);
-    }
+      // Start the worker if not running
+      if (!m_buckets[msg.bucketId].worker)
+        m_buckets[msg.bucketId].worker = std::make_shared<Worker>(m_configBundle, m_buckets[msg.bucketId]);
   }
 }
 
 void
-Bidder::placeBid(unsigned int bucketId, unsigned int auctionId)
+Bidder::placeBid(bucket_id_t bucketId, auction_id_t auctionId)
 {
   auto bidAmount = m_rndBid(m_rng);
   bidAmount += 10000.0 / (m_buckets.size() + 1);
 
-  ndn::Name bidInfo;
-  bidInfo.append("BID");
-  bidInfo.appendNumber(bucketId);
-  bidInfo.appendNumber(auctionId);
-  bidInfo.appendNumber(bidAmount);
+  AuctionMessage msg(AuctionMessage::TypeBid, auctionId, bucketId);
+  msg.bidAmount = bidAmount;
 
   NDN_LOG_DEBUG("PLACE_BID for #" << bucketId << " AID " << auctionId << " $" << bidAmount);
-  m_svs->publishData(bidInfo.wireEncode(), ndn::time::milliseconds(1000));
+  m_svs->publishData(msg.wireEncode(), ndn::time::milliseconds(1000));
 }
 
 } // namespace kua
