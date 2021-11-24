@@ -3,7 +3,7 @@
 #include <ndn-cxx/security/key-chain.hpp>
 
 #include <iostream>
-
+#include "config-bundle.hpp"
 
 namespace kua {
 
@@ -34,10 +34,12 @@ public:
   }
 
   void
-  get(std::string name)
+  get(std::string nameStr)
   {
+    ndn::Name name(nameStr);
+
     ndn::Name hint("/kua");
-    hint.appendNumber(3);
+    hint.appendNumber(hashFunc(name) % NUM_BUCKETS);
     hint.append("FETCH");
 
     ndn::Interest interest(name);
@@ -58,7 +60,7 @@ private:
   {
     // Make command
     ndn::Name interestName("/kua");
-    interestName.appendNumber(3);
+    interestName.appendNumber(hashFunc(name) % NUM_BUCKETS);
     interestName.append("INSERT");
     interestName.append(name.wireEncode());
 
@@ -111,6 +113,8 @@ private:
   ndn::Face m_face;
   ndn::InMemoryStoragePersistent m_ims;
   ndn::KeyChain m_keychain;
+
+  std::hash<ndn::Name> hashFunc;
 };
 
 } // namespace kua
