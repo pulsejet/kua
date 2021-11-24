@@ -65,7 +65,7 @@ def build(bld):
     kua_objects = bld.objects(
         target='kua-objects',
         source=bld.path.ant_glob('src/**/*.cpp',
-                                 excl=['src/kua.cpp']),
+                                 excl=['src/kua.cpp', 'src/client.cpp']),
         use='NDN_CXX NDN_SVS BOOST',
         includes='kua',
         export_includes='kua')
@@ -80,3 +80,8 @@ def build(bld):
                 source='src/kua.cpp',
                 defines='KUA_IS_MASTER',
                 use='kua-objects NDN_CXX NDN_SVS BOOST')
+
+    bld.program(name='kua-client',
+                target='bin/kua-client',
+                source='src/client.cpp',
+                use='NDN_CXX NDN_SVS BOOST')

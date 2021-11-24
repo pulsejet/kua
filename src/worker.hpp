@@ -24,6 +24,12 @@ private:
   void
   run();
 
+  void
+  insertData(const ndn::Name& name, const ndn::Interest& request);
+
+  void
+  replyInsert(const ndn::Interest& request);
+
 private:
   ConfigBundle& m_configBundle;
   const Bucket& m_bucket;
