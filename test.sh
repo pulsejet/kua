@@ -4,6 +4,7 @@ export NDN_LOG="kua.*=DEBUG"
 
 sudo pkill kua
 nfdc cs erase /
+nfdc strategy set /kua/sync/ /localhost/nfd/strategy/multicast
 
 startnode () {
   sleep 0.1
