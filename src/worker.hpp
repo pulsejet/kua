@@ -31,6 +31,9 @@ private:
   void
   replyInsert(const ndn::Interest& request);
 
+  void
+  fetchData(const ndn::Interest& request);
+
 public:
   std::shared_ptr<Store> store;
 

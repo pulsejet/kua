@@ -24,7 +24,9 @@ public:
     if (m_map.find(dataName) != m_map.end())
     {
       return m_map.at(dataName);
-    } else {
+    }
+    else
+    {
       return nullptr;
     }
   }

@@ -11,7 +11,7 @@ class Client
 {
 public:
   void
-  run(std::string name, std::string contents)
+  put(std::string name, std::string contents)
   {
     std::shared_ptr<ndn::Data> packet(std::make_shared<ndn::Data>(ndn::Name(name)));
     packet->setContent(reinterpret_cast<const uint8_t*>(contents.c_str()), contents.size());
@@ -27,16 +27,34 @@ public:
         std::cout << *dataptr << std::endl;
         m_face.put(*dataptr);
       }
-    }, std::bind(&Client::sendRequests, this), nullptr); // Send command on registration
+    }, std::bind(&Client::sendINSERT, this), nullptr); // Send INSERT command on registration
 
     m_face.processEvents();
   }
 
   void
-  sendRequests()
+  get(std::string name)
   {
-    std::cout << "sending request" << std::endl;
+    ndn::Name hint("/kua");
+    hint.appendNumber(3);
+    hint.append("FETCH");
 
+    ndn::Interest interest(name);
+    interest.setMustBeFresh(false);
+    interest.setCanBePrefix(false);
+    interest.setForwardingHint(ndn::DelegationList({{15893, hint }}));
+    m_face.expressInterest(interest,
+                           bind(&Client::onData, this,  _1, _2),
+                           bind(&Client::onNack, this, _1, _2),
+                           bind(&Client::onTimeout, this, _1));
+
+    m_face.processEvents();
+  }
+
+private:
+  void
+  sendINSERT()
+  {
     ndn::Name interestName("/kua");
     interestName.appendNumber(3);
     interestName.append("INSERT");
@@ -65,7 +83,7 @@ public:
                            bind(&Client::onTimeout, this, _1));
   }
 
-private:
+
   void
   onData(const ndn::Interest&, const ndn::Data& data) const
   {
@@ -97,7 +115,12 @@ main(int argc, char** argv)
 {
   try {
     kua::Client client;
-    client.run(argv[1], argv[2]);
+
+    if (argc == 2) {
+      client.get(argv[1]);
+    } else if (argc == 3) {
+      client.put(argv[1], argv[2]);
+    }
     return 0;
   }
   catch (const std::exception& e) {

@@ -78,11 +78,17 @@ Worker::onInterest(const ndn::InterestFilter&, const ndn::Interest& interest)
 
   NDN_LOG_DEBUG("NEW_REQ : #" << m_bucket.id << " : " << reqName);
 
+  // INSERT command
   if (m_bucketPrefix.isPrefixOf(reqName) && reqName.get(-2).toUri() == "INSERT")
   {
     ndn::Name insertName(reqName.get(-1).blockFromValue());
     insertData(insertName, interest);
   }
+
+  // FETCH command
+  for (const auto& delegation : interest.getForwardingHint())
+    if (delegation.name.get(-1).toUri() == "FETCH" && m_bucketPrefix.isPrefixOf(delegation.name))
+      this->fetchData(interest);
 }
 
 void
@@ -118,7 +124,7 @@ Worker::insertData(const ndn::Name& dataName, const ndn::Interest& request)
       // Forwarding hint
       ndn::Name hint(host.first);
       hint.appendNumber(m_bucket.id);
-      interest.setForwardingHint(ndn::DelegationList({{15893, hint.toUri() }}));
+      interest.setForwardingHint(ndn::DelegationList({{15893, hint }}));
 
       // Signature
       ndn::security::SigningInfo interestSigningInfo;
@@ -166,6 +172,16 @@ Worker::replyInsert(const ndn::Interest& request)
   response.setFreshnessPeriod(ndn::time::seconds(10));
   m_keyChain.sign(response);
   m_face.put(response);
+}
+
+void
+Worker::fetchData(const ndn::Interest& request)
+{
+  NDN_LOG_DEBUG("#" << m_bucket.id << " : FETCH : " << request.getName());
+
+  auto data = this->store->get(request.getName());
+  if (data)
+    m_face.put(*data);
 }
 
 } // namespace kua
