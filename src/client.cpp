@@ -5,6 +5,8 @@
 #include <iostream>
 #include "config-bundle.hpp"
 
+// #define VEROBSE
+
 namespace kua {
 
 class Client
@@ -73,7 +75,9 @@ private:
 
     m_face.expressInterest(interest,
                           [this, interestName] (const ndn::Interest&, const ndn::Data& data) {
+#ifdef VERBOSE
                             std::cerr << "FETCH_SUCCESS=" << interestName << std::endl;
+#endif
                             pending--;
                             done++;
 
@@ -158,12 +162,22 @@ private:
     m_keyChain.sign(interest, interestSigningInfo);
 
     // Send Interest
+#ifdef VERBOSE
     std::cerr << "INSERT=" << name << " CMD=" << interestName << std::endl;
+#endif
     m_face.expressInterest(interest,
                            [this, name, interestName] (const ndn::Interest&, const ndn::Data& data) {
+#ifdef VERBOSE
                              std::cerr << "INSERT_SUCCESS=" << name << " CMD=" << interestName << std::endl;
+#endif
                              pending--;
                              this->insertStore();
+                             done++;
+
+                             if (done == m_store.size())
+                             {
+                               m_face.shutdown();
+                             }
                            },
                            [this, name, interestName] (const ndn::Interest&, const ndn::lp::Nack& nack) {
                              std::cerr << "INSERT_NACK=" << name << " CMD=" << interestName << std::endl;
@@ -226,7 +240,7 @@ private:
   }
 
 public:
-  unsigned int windowSize = 20;
+  unsigned int windowSize = 100;
 
 private:
   ndn::Face m_face;
