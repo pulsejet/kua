@@ -11,23 +11,24 @@ class Client
 {
 public:
   void
-  put(std::string name, std::string contents)
+  put(std::string nameStr, std::string contents)
   {
-    std::shared_ptr<ndn::Data> packet(std::make_shared<ndn::Data>(ndn::Name(name)));
+    // Nameify
+    ndn::Name name(nameStr);
+
+    // Create all packets
+    std::shared_ptr<ndn::Data> packet(std::make_shared<ndn::Data>(name));
     packet->setContent(reinterpret_cast<const uint8_t*>(contents.c_str()), contents.size());
     m_keychain.sign(*packet);
     m_ims.insert(*packet);
-    std::cout << "Created packet " << name << std::endl;
 
-    m_face.setInterestFilter(ndn::Name(name), [this] (const auto&, const auto& interest) {
+    // Register prefix and interest filter
+    m_face.setInterestFilter(name, [this] (const auto&, const auto& interest) {
       // Try to find this packet
-      std::cout << "GOT INTEREST" << interest << std::endl;
       auto dataptr = m_ims.find(interest);
-      if (dataptr) {
-        std::cout << *dataptr << std::endl;
+      if (dataptr)
         m_face.put(*dataptr);
-      }
-    }, std::bind(&Client::sendINSERT, this), nullptr); // Send INSERT command on registration
+    }, std::bind(&Client::sendINSERT, this, name), nullptr); // Send INSERT command on registration
 
     m_face.processEvents();
   }
@@ -53,32 +54,36 @@ public:
 
 private:
   void
-  sendINSERT()
+  sendINSERT(const ndn::Name name)
   {
+    // Make command
     ndn::Name interestName("/kua");
     interestName.appendNumber(3);
     interestName.append("INSERT");
-    interestName.append(ndn::Name("/ndn/test").wireEncode());
+    interestName.append(name.wireEncode());
 
+    // Create interest
     ndn::Interest interest(interestName);
-
-    // interest.setForwardingHint(ndn::DelegationList({{15893, "example/testApp/randomData"}}));
-
     interest.setCanBePrefix(false);
     interest.setMustBeFresh(true);
-    interest.setInterestLifetime(ndn::time::milliseconds(3000)); // The default is 4 seconds
+    interest.setInterestLifetime(ndn::time::milliseconds(3000));
 
+    // Replicate to other nodes
     ndn::Name params;
     params.append("REPLICATE");
     interest.setApplicationParameters(params.wireEncode());
 
+    // Sign
     ndn::security::SigningInfo interestSigningInfo;
     interestSigningInfo.setSignedInterestFormat(ndn::security::SignedInterestFormat::V03);
     m_keychain.sign(interest, interestSigningInfo);
 
-    std::cout << "Sending Interest " << interest << std::endl;
+    // Send Interest
+    std::cout << "INSERT=" << name << " CMD=" << interestName << std::endl;
     m_face.expressInterest(interest,
-                           bind(&Client::onData, this,  _1, _2),
+                           [this, name, interestName] (const ndn::Interest&, const ndn::Data& data) {
+                             std::cout << "INSERT_SUCCESS=" << name << " CMD=" << interestName << std::endl;
+                           },
                            bind(&Client::onNack, this, _1, _2),
                            bind(&Client::onTimeout, this, _1));
   }
