@@ -177,8 +177,6 @@ Worker::replyInsert(const ndn::Interest& request)
 void
 Worker::fetchData(const ndn::Interest& request)
 {
-  NDN_LOG_DEBUG("#" << m_bucket.id << " : FETCH : " << request.getName());
-
   auto data = this->store->get(request.getName());
   if (data)
     m_face.put(*data);
