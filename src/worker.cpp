@@ -1,4 +1,5 @@
 #include "worker.hpp"
+#include "store-memory.hpp"
 
 #include <ndn-cxx/util/logger.hpp>
 #include <thread>
@@ -16,6 +17,9 @@ Worker::Worker(ConfigBundle& configBundle, const Bucket& bucket)
   , m_bucketPrefix(ndn::Name(configBundle.kuaPrefix).appendNumber(bucket.id))
 {
   NDN_LOG_INFO("Constructing worker for #" << bucket.id << " " << m_nodePrefix);
+
+  // Make data store
+  this->store = std::make_shared<StoreMemory>(bucket.id);
 
   // Get all interests
   m_face.setInterestFilter("/", std::bind(&Worker::onInterest, this, _1, _2));
@@ -147,7 +151,10 @@ Worker::insertData(const ndn::Name& dataName, const ndn::Interest& request)
   interest.setInterestLifetime(request.getInterestLifetime());
 
   m_face.expressInterest(interest, [this, request] (const auto&, const auto& data) {
-    replyInsert(request);
+    if (store->put(data))
+      replyInsert(request);
+    else
+      NDN_LOG_TRACE("#" << m_bucket.id << " : FAILED_STORE_PUT : " << data.getName());
   }, nullptr, nullptr);
 }
 

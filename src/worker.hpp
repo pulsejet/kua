@@ -4,6 +4,7 @@
 
 #include "config-bundle.hpp"
 #include "bucket.hpp"
+#include "store.hpp"
 
 namespace kua {
 
@@ -29,6 +30,9 @@ private:
 
   void
   replyInsert(const ndn::Interest& request);
+
+public:
+  std::shared_ptr<Store> store;
 
 private:
   ConfigBundle& m_configBundle;
