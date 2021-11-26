@@ -26,13 +26,16 @@ private:
   run();
 
   void
-  insertData(const ndn::Name& name, const ndn::Interest& request);
+  insert(const ndn::Name& dataName, const ndn::Interest& request);
+
+  void
+  insertNoReplicate(const ndn::Name& dataName, const ndn::Interest& request);
 
   void
   replyInsert(const ndn::Interest& request);
 
   void
-  fetchData(const ndn::Interest& request);
+  fetch(const ndn::Interest& request);
 
 public:
   std::shared_ptr<Store> store;

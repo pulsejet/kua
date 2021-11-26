@@ -6,6 +6,7 @@
 
 #include "config-bundle.hpp"
 #include "bucket.hpp"
+#include "command-codes.hpp"
 
 // #define VEROBSE
 
@@ -71,7 +72,7 @@ private:
 
     ndn::Name hint("/kua");
     hint.appendNumber(bucketId);
-    hint.append("FETCH");
+    hint.appendNumber(CommandCodes::FETCH);
 
     ndn::Interest interest(interestName);
     interest.setMustBeFresh(false);
@@ -150,7 +151,7 @@ private:
     // Make command
     ndn::Name interestName("/kua");
     interestName.appendNumber(bucketId);
-    interestName.append("INSERT");
+    interestName.appendNumber(CommandCodes::INSERT);
     interestName.append(name.wireEncode());
 
     // Create interest
@@ -158,11 +159,6 @@ private:
     interest.setCanBePrefix(false);
     interest.setMustBeFresh(true);
     interest.setInterestLifetime(ndn::time::milliseconds(3000));
-
-    // Replicate to other nodes
-    ndn::Name params;
-    params.append("REPLICATE");
-    interest.setApplicationParameters(params.wireEncode());
 
     // Sign
     ndn::security::SigningInfo interestSigningInfo;

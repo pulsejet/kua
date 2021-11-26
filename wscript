@@ -84,4 +84,4 @@ def build(bld):
     bld.program(name='kua-client',
                 target='bin/kua-client',
                 source='src/client.cpp',
-                use='NDN_CXX NDN_SVS BOOST')
+                use='kua-objects NDN_CXX NDN_SVS BOOST')

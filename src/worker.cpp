@@ -1,5 +1,6 @@
 #include "worker.hpp"
 #include "store-memory.hpp"
+#include "command-codes.hpp"
 
 #include <ndn-cxx/util/logger.hpp>
 #include <thread>
@@ -81,79 +82,75 @@ Worker::onInterest(const ndn::InterestFilter&, const ndn::Interest& interest)
   NDN_LOG_DEBUG("NEW_REQ : #" << m_bucket.id << " : " << reqName);
 
   // INSERT command
-  if (reqName.get(-2).toUri() == "INSERT")
+  if (reqName.size() > 2 && reqName[-2].isNumber() &&
+      (m_bucketPrefix.isPrefixOf(reqName) || m_nodePrefix.isPrefixOf(reqName)))
   {
-    ndn::Name insertName(reqName.get(-1).blockFromValue());
-    insertData(insertName, interest);
-    return;
+    uint64_t ccode = reqName[-2].toNumber();
+
+    if (ccode == CommandCodes::INSERT)
+    {
+      ndn::Name insertName(reqName.get(-1).blockFromValue());
+      insert(insertName, interest);
+      return;
+    }
+
+    if (ccode == CommandCodes::INSERT_NO_REPLICATE)
+    {
+      ndn::Name insertName(reqName.get(-1).blockFromValue());
+      insertNoReplicate(insertName, interest);
+      return;
+    }
   }
 
   // FETCH command
   for (const auto& delegation : interest.getForwardingHint())
-    if (delegation.name.get(-1).toUri() == "FETCH" && m_bucketPrefix.isPrefixOf(delegation.name))
-      return this->fetchData(interest);
+    if (delegation.name[-1].isNumber() && delegation.name[-1].toNumber() == CommandCodes::FETCH)
+      return this->fetch(interest);
 }
 
 void
-Worker::insertData(const ndn::Name& dataName, const ndn::Interest& request)
+Worker::insert(const ndn::Name& dataName, const ndn::Interest& request)
 {
-  // Chain replication
-  auto reqName = request.isSigned() ? request.getName().getPrefix(-1) : request.getName();
-  bool replicate = true;
+  std::shared_ptr<int> replicaCount = std::make_shared<int>(0);
 
-  if (request.hasApplicationParameters())
+  for (const auto& host : m_bucket.confirmedHosts)
   {
-    ndn::Name params(request.getApplicationParameters().blockFromValue());
-    if (params.get(0).toUri() == "NO-REPLICATE")
-      replicate = false;
+    // Interest
+    ndn::Name interestName(host.first);
+    interestName.appendNumber(m_bucket.id);
+    interestName.appendNumber(CommandCodes::INSERT_NO_REPLICATE);
+    interestName.append(dataName.wireEncode());
+
+    ndn::Interest interest(interestName);
+    interest.setCanBePrefix(false);
+    interest.setMustBeFresh(true);
+
+    // Signature
+    ndn::security::SigningInfo interestSigningInfo;
+    interestSigningInfo.setSha256Signing();
+    interestSigningInfo.setSignedInterestFormat(ndn::security::SignedInterestFormat::V03);
+    m_keyChain.sign(interest, interestSigningInfo);
+
+
+    // Replicate at all replicas
+    m_face.expressInterest(interest, [this, request, replicaCount, dataName] (const auto&, const auto& data) {
+      (*replicaCount)++;
+      NDN_LOG_TRACE("#" << m_bucket.id << " : INSERT_SUCCESS_REPLICATOR : "
+                  << data.getName() << " : REPLICA " << *replicaCount);
+
+      // All replicas done
+      if ((*replicaCount) >= NUM_REPLICA)
+      {
+        NDN_LOG_DEBUG("#" << m_bucket.id << " : ALL_REPLICAS : " << dataName);
+        replyInsert(request);
+      }
+    }, nullptr, nullptr);
   }
+}
 
-  if (replicate)
-  {
-    std::shared_ptr<int> replicaCount = std::make_shared<int>(0);
-
-    for (const auto& host : m_bucket.confirmedHosts)
-    {
-      // Interest
-      ndn::Name interestName(host.first);
-      interestName.appendNumber(m_bucket.id);
-      interestName.append("INSERT");
-      interestName.append(dataName.wireEncode());
-
-      ndn::Interest interest(interestName);
-      interest.setCanBePrefix(false);
-      interest.setMustBeFresh(true);
-
-      // Prevent loops of replication
-      ndn::Name params;
-      params.append("NO-REPLICATE");
-      interest.setApplicationParameters(params.wireEncode());
-
-      // Signature
-      ndn::security::SigningInfo interestSigningInfo;
-      interestSigningInfo.setSha256Signing();
-      interestSigningInfo.setSignedInterestFormat(ndn::security::SignedInterestFormat::V03);
-      m_keyChain.sign(interest, interestSigningInfo);
-
-
-      // Replicate at all replicas
-      m_face.expressInterest(interest, [this, request, replicaCount, dataName] (const auto&, const auto& data) {
-        (*replicaCount)++;
-        NDN_LOG_TRACE("#" << m_bucket.id << " : INSERT_SUCCESS_REPLICATOR : "
-                    << data.getName() << " : REPLICA " << *replicaCount);
-
-        // All replicas done
-        if ((*replicaCount) >= NUM_REPLICA)
-        {
-          NDN_LOG_DEBUG("#" << m_bucket.id << " : ALL_REPLICAS : " << dataName);
-          replyInsert(request);
-        }
-      }, nullptr, nullptr);
-    }
-
-    return;
-  }
-
+void
+Worker::insertNoReplicate(const ndn::Name& dataName, const ndn::Interest& request)
+{
   // Request data
   ndn::Interest interest(dataName);
 
@@ -182,7 +179,7 @@ Worker::replyInsert(const ndn::Interest& request)
 }
 
 void
-Worker::fetchData(const ndn::Interest& request)
+Worker::fetch(const ndn::Interest& request)
 {
   auto data = this->store->get(request.getName());
   if (data)
