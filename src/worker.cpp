@@ -83,12 +83,13 @@ Worker::onInterest(const ndn::InterestFilter&, const ndn::Interest& interest)
   {
     ndn::Name insertName(reqName.get(-1).blockFromValue());
     insertData(insertName, interest);
+    return;
   }
 
   // FETCH command
   for (const auto& delegation : interest.getForwardingHint())
     if (delegation.name.get(-1).toUri() == "FETCH" && m_bucketPrefix.isPrefixOf(delegation.name))
-      this->fetchData(interest);
+      return this->fetchData(interest);
 }
 
 void
