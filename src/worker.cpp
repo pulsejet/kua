@@ -71,6 +71,9 @@ Worker::onRegisterFailed(const ndn::Name& prefix, const std::string& reason)
 void
 Worker::onInterest(const ndn::InterestFilter&, const ndn::Interest& interest)
 {
+  if (m_dnl.has(interest.getName()))
+    return;
+
   auto reqName = interest.isSigned() ? interest.getName().getPrefix(-1) : interest.getName();
 
   // Ignore interests from localhost
@@ -132,6 +135,10 @@ Worker::insertData(const ndn::Name& dataName, const ndn::Interest& request)
       interestSigningInfo.setSignedInterestFormat(ndn::security::SignedInterestFormat::V03);
       m_keyChain.sign(interest, interestSigningInfo);
 
+      // Don't add your own request to dnl
+      if (!host.first.equals(m_nodePrefix))
+        m_dnl.add(interest.getName());
+
       // Replicate at all replicas
       m_face.expressInterest(interest, [this, request, replicaCount, dataName] (const auto&, const auto& data) {
         (*replicaCount)++;
@@ -156,6 +163,8 @@ Worker::insertData(const ndn::Name& dataName, const ndn::Interest& request)
   interest.setCanBePrefix(false);
   interest.setMustBeFresh(false);
   interest.setInterestLifetime(request.getInterestLifetime());
+
+  m_dnl.add(dataName);
 
   m_face.expressInterest(interest, [this, request] (const auto&, const auto& data) {
     if (store->put(data))

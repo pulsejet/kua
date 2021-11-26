@@ -5,6 +5,7 @@
 #include "config-bundle.hpp"
 #include "bucket.hpp"
 #include "store.hpp"
+#include "dead-name-list.hpp"
 
 namespace kua {
 
@@ -47,6 +48,8 @@ private:
   ndn::KeyChain& m_keyChain;
 
   ndn::Name m_bucketPrefix;
+
+  DeadNameList m_dnl;
 
   size_t m_failedRegistrations = 0;
 };
