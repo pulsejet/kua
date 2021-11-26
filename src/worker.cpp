@@ -146,8 +146,12 @@ Worker::insert(const ndn::Name& dataName, const ndn::Interest& request, const ui
 }
 
 void
-Worker::insertNoReplicate(const ndn::Name& dataName, const ndn::Interest& request, const uint64_t& commandCode)
+Worker::insertNoReplicate(const ndn::Name& dataName, const ndn::Interest& request,
+                          const uint64_t& commandCode)
 {
+  if (commandCode & CommandCodes::IS_RANGE)
+    return insertNoReplicateRange(dataName, request, commandCode);
+
   // Request data
   ndn::Interest interest(dataName);
 
@@ -161,6 +165,47 @@ Worker::insertNoReplicate(const ndn::Name& dataName, const ndn::Interest& reques
     else
       NDN_LOG_TRACE("#" << m_bucket.id << " : FAILED_STORE_PUT : " << data.getName());
   }, nullptr, nullptr);
+}
+
+void
+Worker::insertNoReplicateRange(const ndn::Name& dataName, const ndn::Interest& request,
+                               const uint64_t& commandCode)
+{
+  if (dataName.size() <= 2 || !dataName[-1].isSegment() || !dataName[-2].isSegment())
+    return;
+
+  const auto startSeg = dataName[-2].toSegment();
+  const auto endSeg = dataName[-1].toSegment();
+
+  ndn::Name dataNamePrefix(dataName.getPrefix(-2));
+
+  const auto fetchedCount = std::make_shared<uint64_t>(0);
+
+  for (auto currSeg = startSeg; currSeg <= endSeg; currSeg++)
+  {
+    // Request data
+    ndn::Name interestName(dataNamePrefix);
+    interestName.appendSegment(currSeg);
+
+    ndn::Interest interest(interestName);
+    interest.setCanBePrefix(false);
+    interest.setMustBeFresh(false);
+    interest.setInterestLifetime(request.getInterestLifetime());
+
+    m_face.expressInterest(interest,
+      [this, fetchedCount, endSeg, startSeg, request] (const auto&, const auto& data)
+    {
+      NDN_LOG_DEBUG("FETCH" << *fetchedCount << " " << endSeg - startSeg + 1);
+
+      if (store->put(data))
+        (*fetchedCount)++;
+      else
+        NDN_LOG_TRACE("#" << m_bucket.id << " : FAILED_STORE_PUT : " << data.getName());
+
+      if (*fetchedCount == endSeg - startSeg + 1)
+        replyInsert(request);
+    }, nullptr, nullptr);
+  }
 }
 
 void

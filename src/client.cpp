@@ -135,24 +135,34 @@ private:
   insertStore()
   {
     while (pointer < m_store.size() && pending < windowSize) {
-      sendINSERT(m_store[pointer]->getName());
-      pointer++;
+      sendINSERT();
     }
   }
 
   void
-  sendINSERT(const ndn::Name name)
+  sendINSERT()
   {
-    pending++;
+    // Start segment
+    const auto firstName = m_store[pointer]->getName();
+
+    // Range end segment
+    auto endSeg = firstName[-1].toSegment() - 1;
 
     // Get bucket ID
-    const auto bucketId = Bucket::idFromName(name);
+    const auto bucketId = Bucket::idFromName(firstName);
+
+    while (pointer < m_store.size() && Bucket::idFromName(m_store[pointer]->getName()) == bucketId)
+    {
+      pointer++;
+      pending++;
+      endSeg++;
+    }
 
     // Make command
     ndn::Name interestName("/kua");
     interestName.appendNumber(bucketId);
-    interestName.append(name.wireEncode());
-    interestName.appendNumber(CommandCodes::INSERT);
+    interestName.append(ndn::Name(firstName).appendSegment(endSeg).wireEncode());
+    interestName.appendNumber(CommandCodes::INSERT | CommandCodes::IS_RANGE);
 
     // Create interest
     ndn::Interest interest(interestName);
@@ -160,37 +170,43 @@ private:
     interest.setMustBeFresh(true);
     interest.setInterestLifetime(ndn::time::milliseconds(3000));
 
-    // Sign
+    sendRangeInsert(interest);
+  }
+
+  void
+  sendRangeInsert(const ndn::Interest& interest)
+  {
+    const ndn::Name interestName(interest.isSigned() ? interest.getName().getPrefix(-1) : interest.getName());
+    const ndn::Name dataName(interestName[-2].blockFromValue());
+    const uint64_t endSeg = dataName[-1].toSegment();
+    const uint64_t startSeg = dataName[-2].toSegment();
+    const uint64_t count = endSeg - startSeg + 1;
+
+    // Refresh and sign
+    ndn::Interest newInterest(interestName);
     ndn::security::SigningInfo interestSigningInfo;
     interestSigningInfo.setSignedInterestFormat(ndn::security::SignedInterestFormat::V03);
-    m_keyChain.sign(interest, interestSigningInfo);
+    m_keyChain.sign(newInterest, interestSigningInfo);
 
     // Send Interest
-#ifdef VERBOSE
-    std::cerr << "INSERT=" << name << " CMD=" << interestName << std::endl;
-#endif
-    m_face.expressInterest(interest,
-                           [this, name, interestName] (const ndn::Interest&, const ndn::Data& data) {
-#ifdef VERBOSE
-                             std::cerr << "INSERT_SUCCESS=" << name << " CMD=" << interestName << std::endl;
-#endif
-                             pending--;
-                             this->insertStore();
-                             done++;
+    m_face.expressInterest(newInterest,
+                           [this, count, startSeg, endSeg] (const ndn::Interest& interest, const ndn::Data& data) {
+                              std::cerr << "INSERT_SUCCESS RANGE=" << startSeg << "-->" << endSeg << std::endl;
+                              pending -= count;
+                              done += count;
 
-                             if (done == m_store.size())
-                             {
-                               m_face.shutdown();
-                             }
+                              if (done == m_store.size())
+                                return m_face.shutdown();
+
+                             this->insertStore();
                            },
-                           [this, name, interestName] (const ndn::Interest&, const ndn::lp::Nack& nack) {
-                             std::cerr << "INSERT_NACK=" << name << " CMD=" << interestName << std::endl;
-                             pending--;
+                           [this, count] (const ndn::Interest& interest, const ndn::lp::Nack& nack) {
+                              std::cerr << "INSERT_NACK CMD=" << interest.getName() << std::endl;
+                              pending -= count;
                            },
-                           [this, name, interestName] (const ndn::Interest& interest) {
-                            pending--;
-                            std::cerr << "INSERT_RETRY=" << name << " CMD=" << interestName << std::endl;
-                            this->sendINSERT(name);
+                           [this] (const ndn::Interest& interest) {
+                              std::cerr << "INSERT_RETRY CMD=" << interest.getName() << std::endl;
+                              this->sendRangeInsert(interest);
                            });
   }
 
@@ -244,7 +260,7 @@ private:
   }
 
 public:
-  unsigned int windowSize = 100;
+  unsigned int windowSize = 300;
 
 private:
   ndn::Face m_face;

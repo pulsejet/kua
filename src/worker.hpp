@@ -32,6 +32,9 @@ private:
   insertNoReplicate(const ndn::Name& dataName, const ndn::Interest& request, const uint64_t& commandCode);
 
   void
+  insertNoReplicateRange(const ndn::Name& dataName, const ndn::Interest& request, const uint64_t& commandCode);
+
+  void
   replyInsert(const ndn::Interest& request);
 
   void
