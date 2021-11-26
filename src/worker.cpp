@@ -81,22 +81,22 @@ Worker::onInterest(const ndn::InterestFilter&, const ndn::Interest& interest)
 
   NDN_LOG_DEBUG("NEW_REQ : #" << m_bucket.id << " : " << reqName);
 
-  // INSERT command
-  if (reqName.size() > 2 && reqName[-2].isNumber() &&
+  // Command Code
+  if (reqName.size() > 1 && reqName[-1].isNumber() &&
       (m_bucketPrefix.isPrefixOf(reqName) || m_nodePrefix.isPrefixOf(reqName)))
   {
-    uint64_t ccode = reqName[-2].toNumber();
+    uint64_t ccode = reqName[-1].toNumber();
 
     if (ccode == CommandCodes::INSERT)
     {
-      ndn::Name insertName(reqName.get(-1).blockFromValue());
+      ndn::Name insertName(reqName.get(-2).blockFromValue());
       insert(insertName, interest);
       return;
     }
 
     if (ccode == CommandCodes::INSERT_NO_REPLICATE)
     {
-      ndn::Name insertName(reqName.get(-1).blockFromValue());
+      ndn::Name insertName(reqName.get(-2).blockFromValue());
       insertNoReplicate(insertName, interest);
       return;
     }
@@ -104,7 +104,8 @@ Worker::onInterest(const ndn::InterestFilter&, const ndn::Interest& interest)
 
   // FETCH command
   for (const auto& delegation : interest.getForwardingHint())
-    if (delegation.name[-1].isNumber() && delegation.name[-1].toNumber() == CommandCodes::FETCH)
+    if (delegation.name.size() > 1 && delegation.name[-1].isNumber() &&
+        delegation.name[-1].toNumber() == CommandCodes::FETCH)
       return this->fetch(interest);
 }
 
@@ -118,8 +119,8 @@ Worker::insert(const ndn::Name& dataName, const ndn::Interest& request)
     // Interest
     ndn::Name interestName(host.first);
     interestName.appendNumber(m_bucket.id);
-    interestName.appendNumber(CommandCodes::INSERT_NO_REPLICATE);
     interestName.append(dataName.wireEncode());
+    interestName.appendNumber(CommandCodes::INSERT_NO_REPLICATE);
 
     ndn::Interest interest(interestName);
     interest.setCanBePrefix(false);

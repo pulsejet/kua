@@ -151,8 +151,8 @@ private:
     // Make command
     ndn::Name interestName("/kua");
     interestName.appendNumber(bucketId);
-    interestName.appendNumber(CommandCodes::INSERT);
     interestName.append(name.wireEncode());
+    interestName.appendNumber(CommandCodes::INSERT);
 
     // Create interest
     ndn::Interest interest(interestName);
