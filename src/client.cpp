@@ -46,7 +46,6 @@ public:
       }
     }, std::bind(&Client::insertStore, this), nullptr); // Send INSERT command on registration
 
-    start_time = std::chrono::high_resolution_clock::now();
     m_face.processEvents();
     end_time = std::chrono::high_resolution_clock::now();
     print_time();
@@ -154,6 +153,9 @@ private:
   void
   insertStore()
   {
+    if (!pointer)
+      start_time = std::chrono::high_resolution_clock::now();
+
     while (pointer < m_store.size() && pending < windowSize) {
       sendINSERT();
     }
@@ -211,7 +213,7 @@ private:
     // Send Interest
     m_face.expressInterest(newInterest,
                            [this, count, startSeg, endSeg] (const ndn::Interest& interest, const ndn::Data& data) {
-                              std::cerr << "INSERT_SUCCESS RANGE=" << startSeg << "-->" << endSeg << std::endl;
+                              // std::cerr << "INSERT_SUCCESS RANGE=" << startSeg << "-->" << endSeg << std::endl;
                               pending -= count;
                               done += count;
 
