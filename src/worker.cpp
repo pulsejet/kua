@@ -54,12 +54,14 @@ Worker::onRegisterFailed(const ndn::Name& prefix, const std::string& reason)
   NDN_LOG_ERROR("ERROR: Failed to register prefix '" << prefix
              << "' with the local forwarder (" << reason << ")");
 
-  if (m_failedRegistrations >= 5) {
+  if (m_failedRegistrations >= 50) {
+    NDN_LOG_ERROR("FATAL: Too many failures to register prefix '" << prefix
+             << "' with the local forwarder (" << reason << ")");
     m_face.shutdown();
     return;
   }
 
-  m_scheduler.schedule(ndn::time::milliseconds(30), [this, prefix] {
+  m_scheduler.schedule(ndn::time::milliseconds(300), [this, prefix] {
     m_face.registerPrefix(prefix,
                           nullptr, // RegisterPrefixSuccessCallback is optional
                           std::bind(&Worker::onRegisterFailed, this, _1, _2));
@@ -71,9 +73,6 @@ Worker::onRegisterFailed(const ndn::Name& prefix, const std::string& reason)
 void
 Worker::onInterest(const ndn::InterestFilter&, const ndn::Interest& interest)
 {
-  if (m_dnl.has(interest.getName()))
-    return;
-
   auto reqName = interest.isSigned() ? interest.getName().getPrefix(-1) : interest.getName();
 
   // Ignore interests from localhost
@@ -82,7 +81,7 @@ Worker::onInterest(const ndn::InterestFilter&, const ndn::Interest& interest)
   NDN_LOG_DEBUG("NEW_REQ : #" << m_bucket.id << " : " << reqName);
 
   // INSERT command
-  if (m_bucketPrefix.isPrefixOf(reqName) && reqName.get(-2).toUri() == "INSERT")
+  if (reqName.get(-2).toUri() == "INSERT")
   {
     ndn::Name insertName(reqName.get(-1).blockFromValue());
     insertData(insertName, interest);
@@ -99,7 +98,7 @@ void
 Worker::insertData(const ndn::Name& dataName, const ndn::Interest& request)
 {
   // Chain replication
-  auto reqName = request.getName().getPrefix(-1);
+  auto reqName = request.isSigned() ? request.getName().getPrefix(-1) : request.getName();
   bool replicate = true;
 
   if (request.hasApplicationParameters())
@@ -116,7 +115,12 @@ Worker::insertData(const ndn::Name& dataName, const ndn::Interest& request)
     for (const auto& host : m_bucket.confirmedHosts)
     {
       // Interest
-      ndn::Interest interest(reqName);
+      ndn::Name interestName(host.first);
+      interestName.appendNumber(m_bucket.id);
+      interestName.append("INSERT");
+      interestName.append(dataName.wireEncode());
+
+      ndn::Interest interest(interestName);
       interest.setCanBePrefix(false);
       interest.setMustBeFresh(true);
 
@@ -125,19 +129,12 @@ Worker::insertData(const ndn::Name& dataName, const ndn::Interest& request)
       params.append("NO-REPLICATE");
       interest.setApplicationParameters(params.wireEncode());
 
-      // Forwarding hint
-      ndn::Name hint(host.first);
-      hint.appendNumber(m_bucket.id);
-      interest.setForwardingHint(ndn::DelegationList({{15893, hint }}));
-
       // Signature
       ndn::security::SigningInfo interestSigningInfo;
+      interestSigningInfo.setSha256Signing();
       interestSigningInfo.setSignedInterestFormat(ndn::security::SignedInterestFormat::V03);
       m_keyChain.sign(interest, interestSigningInfo);
 
-      // Don't add your own request to dnl
-      if (!host.first.equals(m_nodePrefix))
-        m_dnl.add(interest.getName());
 
       // Replicate at all replicas
       m_face.expressInterest(interest, [this, request, replicaCount, dataName] (const auto&, const auto& data) {
@@ -164,8 +161,6 @@ Worker::insertData(const ndn::Name& dataName, const ndn::Interest& request)
   interest.setMustBeFresh(false);
   interest.setInterestLifetime(request.getInterestLifetime());
 
-  m_dnl.add(dataName);
-
   m_face.expressInterest(interest, [this, request] (const auto&, const auto& data) {
     if (store->put(data))
       replyInsert(request);
@@ -180,7 +175,9 @@ Worker::replyInsert(const ndn::Interest& request)
   NDN_LOG_TRACE("#" << m_bucket.id << " : INSERT_SUCCESS_REPLY : " << request);
   ndn::Data response(request.getName());
   response.setFreshnessPeriod(ndn::time::seconds(10));
-  m_keyChain.sign(response);
+  ndn::security::SigningInfo info;
+  info.setSha256Signing();
+  m_keyChain.sign(response, info);
   m_face.put(response);
 }
 

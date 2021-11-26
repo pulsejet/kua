@@ -49,8 +49,6 @@ private:
 
   ndn::Name m_bucketPrefix;
 
-  DeadNameList m_dnl;
-
   size_t m_failedRegistrations = 0;
 };
 

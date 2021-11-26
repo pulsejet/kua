@@ -3,7 +3,9 @@
 #include <ndn-cxx/security/key-chain.hpp>
 
 #include <iostream>
+
 #include "config-bundle.hpp"
+#include "bucket.hpp"
 
 // #define VEROBSE
 
@@ -64,8 +66,11 @@ private:
   {
     pending++;
 
+    // Get bucket ID
+    const auto bucketId = Bucket::idFromName(interestName);
+
     ndn::Name hint("/kua");
-    hint.appendNumber(hashFunc(interestName) % NUM_BUCKETS);
+    hint.appendNumber(bucketId);
     hint.append("FETCH");
 
     ndn::Interest interest(interestName);
@@ -139,9 +144,12 @@ private:
   {
     pending++;
 
+    // Get bucket ID
+    const auto bucketId = Bucket::idFromName(name);
+
     // Make command
     ndn::Name interestName("/kua");
-    interestName.appendNumber(hashFunc(name) % NUM_BUCKETS);
+    interestName.appendNumber(bucketId);
     interestName.append("INSERT");
     interestName.append(name.wireEncode());
 
@@ -247,7 +255,6 @@ private:
   std::vector<std::shared_ptr<ndn::Data>> m_store;
   ndn::KeyChain m_keyChain;
 
-  std::hash<ndn::Name> hashFunc;
   unsigned int pending = 0;
   unsigned int pointer = 0;
   unsigned int done = 0;
