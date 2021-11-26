@@ -5,7 +5,6 @@
 #include "config-bundle.hpp"
 #include "bucket.hpp"
 #include "store.hpp"
-#include "dead-name-list.hpp"
 
 namespace kua {
 
