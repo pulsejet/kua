@@ -3,6 +3,7 @@
 #include <ndn-cxx/security/key-chain.hpp>
 
 #include <iostream>
+#include <chrono>
 
 #include "config-bundle.hpp"
 #include "bucket.hpp"
@@ -45,7 +46,10 @@ public:
       }
     }, std::bind(&Client::insertStore, this), nullptr); // Send INSERT command on registration
 
+    start_time = std::chrono::high_resolution_clock::now();
     m_face.processEvents();
+    end_time = std::chrono::high_resolution_clock::now();
+    print_time();
   }
 
   void
@@ -58,7 +62,23 @@ public:
 
     sendFETCH(name);
 
+    start_time = std::chrono::high_resolution_clock::now();
     m_face.processEvents();
+    end_time = std::chrono::high_resolution_clock::now();
+    print_time();
+  }
+
+  void
+  print_time()
+  {
+    auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+    uint64_t dataSize = 0;
+    for (const auto& data : m_store)
+      if (data)
+        dataSize += data->getContent().size();
+
+    std::cerr << "Processed " << dataSize / 1000 << "KB in " << ms_int.count() << "ms" << std::endl;
   }
 
 private:
@@ -270,6 +290,9 @@ private:
   unsigned int pending = 0;
   unsigned int pointer = 0;
   unsigned int done = 0;
+
+  std::chrono::_V2::system_clock::time_point start_time;
+  std::chrono::_V2::system_clock::time_point end_time;
 };
 
 } // namespace kua
