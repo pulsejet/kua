@@ -87,17 +87,10 @@ Worker::onInterest(const ndn::InterestFilter&, const ndn::Interest& interest)
   {
     uint64_t ccode = reqName[-1].toNumber();
 
-    if (ccode == CommandCodes::INSERT)
+    if (ccode & CommandCodes::INSERT)
     {
       ndn::Name insertName(reqName.get(-2).blockFromValue());
-      insert(insertName, interest);
-      return;
-    }
-
-    if (ccode == CommandCodes::INSERT_NO_REPLICATE)
-    {
-      ndn::Name insertName(reqName.get(-2).blockFromValue());
-      insertNoReplicate(insertName, interest);
+      insert(insertName, interest, ccode);
       return;
     }
   }
@@ -110,8 +103,11 @@ Worker::onInterest(const ndn::InterestFilter&, const ndn::Interest& interest)
 }
 
 void
-Worker::insert(const ndn::Name& dataName, const ndn::Interest& request)
+Worker::insert(const ndn::Name& dataName, const ndn::Interest& request, const uint64_t& commandCode)
 {
+  if (commandCode & CommandCodes::NO_REPLICATE)
+    return insertNoReplicate(dataName, request, commandCode);
+
   std::shared_ptr<int> replicaCount = std::make_shared<int>(0);
 
   for (const auto& host : m_bucket.confirmedHosts)
@@ -120,7 +116,7 @@ Worker::insert(const ndn::Name& dataName, const ndn::Interest& request)
     ndn::Name interestName(host.first);
     interestName.appendNumber(m_bucket.id);
     interestName.append(dataName.wireEncode());
-    interestName.appendNumber(CommandCodes::INSERT_NO_REPLICATE);
+    interestName.appendNumber(commandCode | CommandCodes::NO_REPLICATE);
 
     ndn::Interest interest(interestName);
     interest.setCanBePrefix(false);
@@ -150,7 +146,7 @@ Worker::insert(const ndn::Name& dataName, const ndn::Interest& request)
 }
 
 void
-Worker::insertNoReplicate(const ndn::Name& dataName, const ndn::Interest& request)
+Worker::insertNoReplicate(const ndn::Name& dataName, const ndn::Interest& request, const uint64_t& commandCode)
 {
   // Request data
   ndn::Interest interest(dataName);

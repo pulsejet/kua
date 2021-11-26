@@ -26,10 +26,10 @@ private:
   run();
 
   void
-  insert(const ndn::Name& dataName, const ndn::Interest& request);
+  insert(const ndn::Name& dataName, const ndn::Interest& request, const uint64_t& commandCode);
 
   void
-  insertNoReplicate(const ndn::Name& dataName, const ndn::Interest& request);
+  insertNoReplicate(const ndn::Name& dataName, const ndn::Interest& request, const uint64_t& commandCode);
 
   void
   replyInsert(const ndn::Interest& request);
