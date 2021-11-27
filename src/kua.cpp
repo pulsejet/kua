@@ -44,7 +44,8 @@ main(int argc, char *argv[])
 
   // Advertise basic prefixes
   nlsr.advertise(nodePrefix);
-  nlsr.advertise(ndn::Name(kuaPrefix).append("sync"));
+  nlsr.advertise(ndn::Name(kuaPrefix).append("sync").append("auction"));
+  nlsr.advertise(ndn::Name(kuaPrefix).append("sync").append("health"));
 
   std::unique_ptr<kua::Master> master;
   if (isMaster) {
