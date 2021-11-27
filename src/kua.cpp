@@ -1,10 +1,14 @@
 #include <iostream>
 #include <string>
+#include <ndn-cxx/util/logger.hpp>
 
 #include "config-bundle.hpp"
 #include "node-watcher.hpp"
 #include "bidder.hpp"
 #include "master.hpp"
+#include "nlsr.hpp"
+
+NDN_LOG_INIT(kua.main);
 
 int
 main(int argc, char *argv[])
@@ -29,6 +33,7 @@ main(int argc, char *argv[])
   // Start face and keychain
   ndn::Face face;
   ndn::KeyChain keyChain;
+  kua::NLSR nlsr(keyChain, face);
 
   // Create common bundle
   kua::ConfigBundle configBundle { kuaPrefix, nodePrefix, face, keyChain, isMaster };
@@ -36,6 +41,10 @@ main(int argc, char *argv[])
   // Start components
   kua::NodeWatcher nodeWatcher(configBundle);
   kua::Bidder bidder(configBundle, nodeWatcher);
+
+  // Advertise basic prefixes
+  nlsr.advertise(nodePrefix);
+  nlsr.advertise(ndn::Name(kuaPrefix).append("sync"));
 
   std::unique_ptr<kua::Master> master;
   if (isMaster) {

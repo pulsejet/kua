@@ -5,6 +5,7 @@
 #include "config-bundle.hpp"
 #include "bucket.hpp"
 #include "store.hpp"
+#include "nlsr.hpp"
 
 namespace kua {
 
@@ -53,6 +54,9 @@ private:
   ndn::KeyChain& m_keyChain;
 
   ndn::Name m_bucketPrefix;
+  ndn::Name m_bucketNodePrefix;
+
+  std::shared_ptr<NLSR> nlsr;
 
   size_t m_failedRegistrations = 0;
 };

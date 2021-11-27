@@ -16,8 +16,12 @@ Worker::Worker(ConfigBundle& configBundle, const Bucket& bucket)
   , m_scheduler(m_face.getIoService())
   , m_keyChain(configBundle.keyChain)
   , m_bucketPrefix(ndn::Name(configBundle.kuaPrefix).appendNumber(bucket.id))
+  , m_bucketNodePrefix(ndn::Name(m_nodePrefix).appendNumber(bucket.id))
 {
   NDN_LOG_INFO("Constructing worker for #" << bucket.id << " " << m_nodePrefix);
+
+  // Make NLSR controller
+  nlsr = std::make_shared<NLSR>(m_keyChain, m_face);
 
   // Make data store
   this->store = std::make_shared<StoreMemory>(bucket.id);
@@ -26,13 +30,18 @@ Worker::Worker(ConfigBundle& configBundle, const Bucket& bucket)
   m_face.setInterestFilter("/", std::bind(&Worker::onInterest, this, _1, _2));
 
   // Register for unique node
-  m_face.registerPrefix(ndn::Name(m_nodePrefix).appendNumber(bucket.id),
-                        nullptr, // RegisterPrefixSuccessCallback is optional
+
+  m_face.registerPrefix(m_bucketNodePrefix,
+                        [this] (const auto&) {
+                          nlsr->advertise(m_bucketNodePrefix);
+                        },
                         std::bind(&Worker::onRegisterFailed, this, _1, _2));
 
   // Register for bucket
   m_face.registerPrefix(m_bucketPrefix,
-                        nullptr, // RegisterPrefixSuccessCallback is optional
+                        [this] (const auto&) {
+                          nlsr->advertise(m_bucketPrefix);
+                        },
                         std::bind(&Worker::onRegisterFailed, this, _1, _2));
 
   std::thread thread(std::bind(&Worker::run, this));

@@ -8,6 +8,7 @@
 #include "config-bundle.hpp"
 #include "bucket.hpp"
 #include "command-codes.hpp"
+#include "nlsr.hpp"
 
 // #define VEROBSE
 
@@ -23,8 +24,13 @@ public:
     ndn::Name namePrefix(nameStr);
     populateStore(namePrefix, std::cin);
 
+    auto nlsr = std::make_shared<NLSR>(m_keyChain, m_face);
+
     // Register prefix and interest filter
-    m_face.setInterestFilter(namePrefix, [this, namePrefix] (const auto&, const auto& interest) {
+    m_face.setInterestFilter(namePrefix, [this, namePrefix, nlsr] (const auto&, const auto& interest) {
+      // Advertise to NLSR
+      nlsr->advertise(namePrefix);
+
       std::shared_ptr<ndn::Data> data;
       const ndn::Name& iname = interest.getName();
 
