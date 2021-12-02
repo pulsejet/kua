@@ -11,6 +11,8 @@
 
 // #define VEROBSE
 
+#define INSERT_RANGE_MAX_PACK 50
+
 namespace kua {
 
 class Client
@@ -169,11 +171,14 @@ private:
 
     // Range end segment
     auto endSeg = firstName[-1].toSegment() - 1;
+    const auto firstSeg = endSeg;
 
     // Get bucket ID
     const auto bucketId = Bucket::idFromName(firstName);
 
-    while (pointer < m_store.size() && Bucket::idFromName(m_store[pointer]->getName()) == bucketId)
+    while (pointer < m_store.size() &&
+           Bucket::idFromName(m_store[pointer]->getName()) == bucketId &&
+           endSeg - firstSeg < INSERT_RANGE_MAX_PACK)
     {
       pointer++;
       pending++;
